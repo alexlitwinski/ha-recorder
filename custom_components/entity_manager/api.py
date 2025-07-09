@@ -94,7 +94,7 @@ class EntityManagerEntitiesView(HomeAssistantView):
             )
         
         try:
-            entities = manager.get_all_entities()
+            entities = await manager.get_all_entities()
             return web.Response(
                 text=json.dumps(entities),
                 content_type="application/json"
@@ -120,7 +120,7 @@ class EntityManagerPanelView(HomeAssistantView):
         hass = request.app["hass"]
         
         # Ler o arquivo HTML do painel
-        panel_path = hass.config.path("custom_components", DOMAIN, "panel.html")
+        panel_path = hass.config.path("custom_components", DOMAIN, "panel-v2.html")
         
         try:
             with open(panel_path, 'r', encoding='utf-8') as f:
