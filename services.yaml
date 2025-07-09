@@ -1,0 +1,86 @@
+update_entity_state:
+  name: Atualizar Estado da Entidade
+  description: Habilita ou desabilita uma entidade específica
+  fields:
+    entity_id:
+      name: ID da Entidade
+      description: ID da entidade a ser atualizada
+      required: true
+      selector:
+        entity:
+    enabled:
+      name: Habilitado
+      description: Se a entidade deve estar habilitada ou não
+      required: true
+      selector:
+        boolean:
+
+update_recorder_days:
+  name: Atualizar Dias do Recorder
+  description: Define quantos dias o histórico da entidade deve ser mantido
+  fields:
+    entity_id:
+      name: ID da Entidade
+      description: ID da entidade a ser atualizada
+      required: true
+      selector:
+        entity:
+    recorder_days:
+      name: Dias no Recorder
+      description: Número de dias para manter o histórico (0 = não gravar)
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 365
+          step: 1
+
+bulk_update:
+  name: Atualização em Lote
+  description: Atualiza múltiplas entidades de uma vez
+  fields:
+    entity_ids:
+      name: IDs das Entidades
+      description: Lista de entidades a serem atualizadas
+      required: true
+      selector:
+        entity:
+          multiple: true
+    enabled:
+      name: Habilitado
+      description: Se as entidades devem estar habilitadas ou não (opcional)
+      required: false
+      selector:
+        boolean:
+    recorder_days:
+      name: Dias no Recorder
+      description: Número de dias para manter o histórico (opcional)
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 365
+          step: 1
+
+purge_recorder:
+  name: Limpar Recorder
+  description: Remove dados antigos do recorder baseado nas configurações
+  fields:
+    entity_ids:
+      name: IDs das Entidades
+      description: Lista de entidades para limpar (vazio = todas configuradas)
+      required: false
+      selector:
+        entity:
+          multiple: true
+    force_purge:
+      name: Forçar Limpeza
+      description: Força a limpeza mesmo para entidades com recorder_days=0
+      required: false
+      default: false
+      selector:
+        boolean:
+
+reload_config:
+  name: Recarregar Configuração
+  description: Recarrega a configuração do arquivo
