@@ -1,6 +1,7 @@
-# Entity Manager Card Resource
-# Adicione esta linha na sua configuração do Lovelace para usar o card
+# Entity Manager Card Resource V2
+# Adicione esta linha na sua configuração do Lovelace para usar o card manualmente
+# (normalmente não é necessário pois o componente registra automaticamente)
 
 resources:
-  - url: /entity_manager_card.js
+  - url: /local/entity-manager-card-v2.js
     type: module
