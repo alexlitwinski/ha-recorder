@@ -1,0 +1,80 @@
+"""Sensor platform for Entity Manager."""
+import logging
+from typing import Any, Dict, Optional
+
+from homeassistant.components.sensor import SensorEntity
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_registry import async_get as async_get_entity_registry
+
+from .const import DOMAIN
+
+_LOGGER = logging.getLogger(__name__)
+
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up Entity Manager sensor."""
+    manager = hass.data[DOMAIN]
+    
+    async_add_entities([
+        EntityManagerSensor(hass, manager),
+    ])
+
+
+class EntityManagerSensor(SensorEntity):
+    """Entity Manager sensor."""
+    
+    def __init__(self, hass: HomeAssistant, manager):
+        """Initialize the sensor."""
+        self.hass = hass
+        self._manager = manager
+        self._attr_name = "Entity Manager Stats"
+        self._attr_unique_id = f"{DOMAIN}_stats"
+        self._attr_icon = "mdi:view-grid"
+        
+    @property
+    def state(self) -> int:
+        """Return the number of managed entities."""
+        return len(self._manager._config)
+    
+    @property
+    def extra_state_attributes(self) -> Dict[str, Any]:
+        """Return sensor attributes."""
+        entity_registry = async_get_entity_registry(self.hass)
+        
+        total_entities = len(entity_registry.entities)
+        managed_entities = len(self._manager._config)
+        enabled_entities = len([e for e in entity_registry.entities.values() if not e.disabled_by])
+        disabled_entities = total_entities - enabled_entities
+        
+        # Contar entidades por domínio
+        domains = {}
+        for entity in entity_registry.entities.values():
+            domain = entity.entity_id.split('.')[0]
+            domains[domain] = domains.get(domain, 0) + 1
+        
+        # Configurações de recorder por dias
+        recorder_config = {}
+        for entity_id, config in self._manager._config.items():
+            days = config.get('recorder_days', 10)
+            recorder_config[f"entities_with_{days}_days"] = recorder_config.get(f"entities_with_{days}_days", 0) + 1
+        
+        return {
+            "total_entities": total_entities,
+            "managed_entities": managed_entities,
+            "enabled_entities": enabled_entities,
+            "disabled_entities": disabled_entities,
+            "domains": domains,
+            "recorder_config": recorder_config,
+            "config_file": self._manager._config_path,
+        }
+    
+    async def async_update(self) -> None:
+        """Update the sensor."""
+        # Força reload da configuração se necessário
+        await self._manager.load_config()
