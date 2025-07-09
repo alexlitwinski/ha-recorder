@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Entity Manager</title>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--primary-background-color, #fafafa);
+            color: var(--primary-text-color, #212121);
+        }
+        
+        .header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: var(--card-background-color, white);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: var(--card-background-color, white);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            flex-wrap: wrap;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .filter-group label {
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .filter-group input, .filter-group select {
+            padding: 8px 12px;
+            border: 1px solid var(--divider-color, #e0e0e0);
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .bulk-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: var(--card-background-color, white);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            align-items: center;
+        }
+        
+        .bulk-actions button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color, #03a9f4);
+            color: white;
+        }
+        
+        .btn-success {
+            background-color: #4caf50;
+            color: white;
+        }
+        
+        .btn-danger {
+            background-color: #f44336;
+            color: white;
+        }
+        
+        .btn-warning {
+            background-color: #ff9800;
+            color: white;
+        }
+        
+        .entities-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 15px;
+        }
+        
+        .entity-card {
+            background: var(--card-background-color, white);
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-left: 4px solid var(--primary-color, #03a9f4);
+        }
+        
+        .entity-card.disabled {
+            opacity: 0.6;
+            border-left-color: #ccc;
+        }
+        
+        .entity-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+        
+        .entity-name {
+            font-weight: 500;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+        
+        .entity-id {
+            font-size: 12px;
+            color: var(--secondary-text-color, #757575);
+        }
+        
+        .entity-state {
+            font-size: 14px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: var(--divider-color, #e0e0e0);
+        }
+        
+        .entity-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 10px;
+        }
+        
+        .entity-controls input[type="checkbox"] {
+            transform: scale(1.2);
+        }
+        
+        .entity-controls input[type="number"] {
+            width: 80px;
+            padding: 4px 8px;
+            border: 1px solid var(--divider-color, #e0e0e0);
+            border-radius: 4px;
+        }
+        
+        .entity-controls button {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .toggle-btn {
+            background: var(--primary-color, #03a9f4);
+            color: white;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 16px;
+        }
+        
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        
+        .success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        
+        .selected-count {
+            font-weight: 500;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Entity Manager</h1>
+        <button class="btn-primary" onclick="loadEntities()">🔄 Recarregar</button>
+    </div>
+    
+    <div id="message-area"></div>
+    
+    <div class="filters">
+        <div class="filter-group">
+            <label>Buscar por Nome/ID:</label>
+            <input type="text" id="searchFilter" placeholder="Digite para filtrar..." onkeyup="filterEntities()">
+        </div>
+        <div class="filter-group">
+            <label>Estado:</label>
+            <select id="stateFilter" onchange="filterEntities()">
+                <option value="">Todos</option>
+                <option value="on">Ligado</option>
+                <option value="off">Desligado</option>
+                <option value="unavailable">Indisponível</option>
+                <option value="unknown">Desconhecido</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Domínio:</label>
+            <select id="domainFilter" onchange="filterEntities()">
+                <option value="">Todos</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Status:</label>
+            <select id="enabledFilter" onchange="filterEntities()">
+                <option value="">Todos</option>
+                <option value="enabled">Habilitados</option>
+                <option value="disabled">Desabilitados</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="bulk-actions">
+        <span class="selected-count">Selecionados: <span id="selectedCount">0</span></span>
+        <button class="btn-success" onclick="bulkEnable()">✅ Habilitar</button>
+        <button class="btn-danger" onclick="bulkDisable()">❌ Desabilitar</button>
+        <input type="number" id="bulkRecorderDays" placeholder="Dias" min="0" max="365" style="width: 80px;">
+        <button class="btn-primary" onclick="bulkUpdateRecorder()">📊 Definir Dias</button>
+        <button class="btn-warning" onclick="bulkPurge()">🗑️ Limpar Histórico</button>
+        <button class="btn-primary" onclick="selectAll()">☑️ Selecionar Todos</button>
+        <button class="btn-primary" onclick="selectNone()">☐ Limpar Seleção</button>
+    </div>
+    
+    <div id="entitiesContainer">
+        <div class="loading">Carregando entidades...</div>
+    </div>
+
+    <script>
+        let allEntities = [];
+        let selectedEntities = new Set();
+        
+        // Conectar com Home Assistant
+        const hass = parent.hass || window.hass;
+        
+        async function loadEntities() {
+            try {
+                showMessage('Carregando entidades...', 'info');
+                
+                // Buscar todas as entidades
+                const states = await hass.callWS({
+                    type: 'get_states'
+                });
+                
+                const entityRegistry = await hass.callWS({
+                    type: 'config/entity_registry/list'
+                });
+                
+                // Buscar configurações do entity manager
+                let entityConfigs = {};
+                try {
+                    const response = await hass.callApi('GET', 'entity_manager/config');
+                    entityConfigs = response || {};
+                } catch (e) {
+                    console.log('No existing config found, using defaults');
+                }
+                
+                // Combinar dados
+                allEntities = entityRegistry.map(entity => {
+                    const state = states.find(s => s.entity_id === entity.entity_id);
+                    const config = entityConfigs[entity.entity_id] || {};
+                    
+                    return {
+                        entity_id: entity.entity_id,
+                        name: entity.name || entity.entity_id,
+                        domain: entity.entity_id.split('.')[0],
+                        platform: entity.platform,
+                        enabled: !entity.disabled_by,
+                        state: state ? state.state : 'unavailable',
+                        attributes: state ? state.attributes : {},
+                        recorder_days: config.recorder_days || 10
+                    };
+                });
+                
+                populateDomainFilter();
+                filterEntities();
+                updateSelectedCount();
+                showMessage('Entidades carregadas com sucesso!', 'success');
+                
+            } catch (error) {
+                console.error('Error loading entities:', error);
+                showMessage('Erro ao carregar entidades: ' + error.message, 'error');
+            }
+        }
+        
+        function populateDomainFilter() {
+            const domains = [...new Set(allEntities.map(e => e.domain))].sort();
+            const domainFilter = document.getElementById('domainFilter');
+            domainFilter.innerHTML = '<option value="">Todos</option>';
+            domains.forEach(domain => {
+                domainFilter.innerHTML += `<option value="${domain}">${domain}</option>`;
+            });
+        }
+        
+        function filterEntities() {
+            const searchText = document.getElementById('searchFilter').value.toLowerCase();
+            const stateFilter = document.getElementById('stateFilter').value;
+            const domainFilter = document.getElementById('domainFilter').value;
+            const enabledFilter = document.getElementById('enabledFilter').value;
+            
+            const filtered = allEntities.filter(entity => {
+                const matchesSearch = !searchText || 
+                    entity.entity_id.toLowerCase().includes(searchText) || 
+                    entity.name.toLowerCase().includes(searchText);
+                
+                const matchesState = !stateFilter || entity.state === stateFilter;
+                const matchesDomain = !domainFilter || entity.domain === domainFilter;
+                const matchesEnabled = !enabledFilter || 
+                    (enabledFilter === 'enabled' && entity.enabled) ||
+                    (enabledFilter === 'disabled' && !entity.enabled);
+                
+                return matchesSearch && matchesState && matchesDomain && matchesEnabled;
+            });
+            
+            renderEntities(filtered);
+        }
+        
+        function renderEntities(entities) {
+            const container = document.getElementById('entitiesContainer');
+            
+            if (entities.length === 0) {
+                container.innerHTML = '<div class="loading">Nenhuma entidade encontrada.</div>';
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="entities-grid">
+                    ${entities.map(entity => createEntityCard(entity)).join('')}
+                </div>
+            `;
+        }
+        
+        function createEntityCard(entity) {
+            const isSelected = selectedEntities.has(entity.entity_id);
+            return `
+                <div class="entity-card ${!entity.enabled ? 'disabled' : ''}" data-entity-id="${entity.entity_id}">
+                    <div class="entity-header">
+                        <div>
+                            <div class="entity-name">${entity.name}</div>
+                            <div class="entity-id">${entity.entity_id}</div>
+                        </div>
+                        <div class="entity-state">${entity.state}</div>
+                    </div>
+                    <div class="entity-controls">
+                        <input type="checkbox" ${isSelected ? 'checked' : ''} 
+                               onchange="toggleSelection('${entity.entity_id}')">
+                        <label>Habilitado:</label>
+                        <input type="checkbox" ${entity.enabled ? 'checked' : ''} 
+                               onchange="toggleEntity('${entity.entity_id}', this.checked)">
+                        <label>Dias:</label>
+                        <input type="number" value="${entity.recorder_days}" min="0" max="365"
+                               onchange="updateRecorderDays('${entity.entity_id}', this.value)">
+                        <button class="toggle-btn" onclick="purgeEntity('${entity.entity_id}')">🗑️</button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function toggleSelection(entityId) {
+            if (selectedEntities.has(entityId)) {
+                selectedEntities.delete(entityId);
+            } else {
+                selectedEntities.add(entityId);
+            }
+            updateSelectedCount();
+        }
+        
+        function updateSelectedCount() {
+            document.getElementById('selectedCount').textContent = selectedEntities.size;
+        }
+        
+        function selectAll() {
+            const visibleEntities = document.querySelectorAll('.entity-card');
+            visibleEntities.forEach(card => {
+                const entityId = card.dataset.entityId;
+                selectedEntities.add(entityId);
+                const checkbox = card.querySelector('input[type="checkbox"]');
+                checkbox.checked = true;
+            });
+            updateSelectedCount();
+        }
+        
+        function selectNone() {
+            selectedEntities.clear();
+            document.querySelectorAll('.entity-card input[type="checkbox"]').forEach(cb => cb.checked = false);
+            updateSelectedCount();
+        }
+        
+        async function toggleEntity(entityId, enabled) {
+            try {
+                await hass.callService('entity_manager', 'update_entity_state', {
+                    entity_id: entityId,
+                    enabled: enabled
+                });
+                
+                // Atualizar entidade local
+                const entity = allEntities.find(e => e.entity_id === entityId);
+                if (entity) {
+                    entity.enabled = enabled;
+                }
+                
+                showMessage(`Entidade ${enabled ? 'habilitada' : 'desabilitada'} com sucesso!`, 'success');
+                filterEntities();
+                
+            } catch (error) {
+                console.error('Error toggling entity:', error);
+                showMessage('Erro ao alterar entidade: ' + error.message, 'error');
+                // Reverter checkbox
+                event.target.checked = !enabled;
+            }
+        }
+        
+        async function updateRecorderDays(entityId, days) {
+            try {
+                await hass.callService('entity_manager', 'update_recorder_days', {
+                    entity_id: entityId,
+                    recorder_days: parseInt(days)
+                });
+                
+                // Atualizar entidade local
+                const entity = allEntities.find(e => e.entity_id === entityId);
+                if (entity) {
+                    entity.recorder_days = parseInt(days);
+                }
+                
+                showMessage('Dias do recorder atualizados com sucesso!', 'success');
+                
+            } catch (error) {
+                console.error('Error updating recorder days:', error);
+                showMessage('Erro ao atualizar dias do recorder: ' + error.message, 'error');
+            }
+        }
+        
+        async function bulkEnable() {
+            if (selectedEntities.size === 0) {
+                showMessage('Selecione pelo menos uma entidade', 'error');
+                return;
+            }
+            
+            try {
+                await hass.callService('entity_manager', 'bulk_update', {
+                    entity_ids: Array.from(selectedEntities),
+                    enabled: true
+                });
+                
+                showMessage(`${selectedEntities.size} entidades habilitadas com sucesso!`, 'success');
+                loadEntities();
+                
+            } catch (error) {
+                showMessage('Erro na atualização em lote: ' + error.message, 'error');
+            }
+        }
+        
+        async function bulkDisable() {
+            if (selectedEntities.size === 0) {
+                showMessage('Selecione pelo menos uma entidade', 'error');
+                return;
+            }
+            
+            try {
+                await hass.callService('entity_manager', 'bulk_update', {
+                    entity_ids: Array.from(selectedEntities),
+                    enabled: false
+                });
+                
+                showMessage(`${selectedEntities.size} entidades desabilitadas com sucesso!`, 'success');
+                loadEntities();
+                
+            } catch (error) {
+                showMessage('Erro na atualização em lote: ' + error.message, 'error');
+            }
+        }
+        
+        async function bulkUpdateRecorder() {
+            if (selectedEntities.size === 0) {
+                showMessage('Selecione pelo menos uma entidade', 'error');
+                return;
+            }
+            
+            const days = document.getElementById('bulkRecorderDays').value;
+            if (!days) {
+                showMessage('Digite o número de dias', 'error');
+                return;
+            }
+            
+            try {
+                await hass.callService('entity_manager', 'bulk_update', {
+                    entity_ids: Array.from(selectedEntities),
+                    recorder_days: parseInt(days)
+                });
+                
+                showMessage(`Dias do recorder atualizados para ${selectedEntities.size} entidades!`, 'success');
+                loadEntities();
+                
+            } catch (error) {
+                showMessage('Erro na atualização em lote: ' + error.message, 'error');
+            }
+        }
+        
+        async function bulkPurge() {
+            if (selectedEntities.size === 0) {
+                showMessage('Selecione pelo menos uma entidade', 'error');
+                return;
+            }
+            
+            if (!confirm(`Tem certeza que deseja limpar o histórico de ${selectedEntities.size} entidades?`)) {
+                return;
+            }
+            
+            try {
+                await hass.callService('entity_manager', 'purge_recorder', {
+                    entity_ids: Array.from(selectedEntities)
+                });
+                
+                showMessage(`Histórico limpo para ${selectedEntities.size} entidades!`, 'success');
+                
+            } catch (error) {
+                showMessage('Erro ao limpar histórico: ' + error.message, 'error');
+            }
+        }
+        
+        async function purgeEntity(entityId) {
+            if (!confirm(`Tem certeza que deseja limpar o histórico da entidade ${entityId}?`)) {
+                return;
+            }
+            
+            try {
+                await hass.callService('entity_manager', 'purge_recorder', {
+                    entity_ids: [entityId]
+                });
+                
+                showMessage('Histórico limpo com sucesso!', 'success');
+                
+            } catch (error) {
+                showMessage('Erro ao limpar histórico: ' + error.message, 'error');
+            }
+        }
+        
+        function showMessage(message, type) {
+            const messageArea = document.getElementById('message-area');
+            messageArea.innerHTML = `<div class="${type}">${message}</div>`;
+            
+            setTimeout(() => {
+                messageArea.innerHTML = '';
+            }, 5000);
+        }
+        
+        // Carregar entidades na inicialização
+        document.addEventListener('DOMContentLoaded', loadEntities);
+    </script>
+</body>
+</html>
