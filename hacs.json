@@ -1,0 +1,7 @@
+{
+  "name": "HA Recorder Manager",
+  "country": ["BR"],
+  "domains": ["entity_manager"],
+  "iot_class": "Local Polling",
+  "homeassistant": "2023.1.0"
+}
