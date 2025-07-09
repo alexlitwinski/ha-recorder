@@ -14,6 +14,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.entity_registry import async_get as async_get_entity_registry
 from homeassistant.helpers.device_registry import async_get as async_get_device_registry
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.components.http import StaticPathConfig
 
 from .const import (
     DOMAIN,
@@ -75,7 +76,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Setup API views
     setup_api(hass)
     
-    # Register the custom card
+    # Register the custom card (usando API assíncrona correta)
     await _register_frontend_resources(hass)
     
     # Setup sensor platform
@@ -87,26 +88,31 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def _register_frontend_resources(hass: HomeAssistant):
     """Register frontend resources for the custom card."""
     try:
-        # Registrar a rota para servir o arquivo
-        hass.http.register_static_path(
-            "/local/entity-manager-card-v2.js",
-            hass.config.path("custom_components", DOMAIN, "entity-manager-card-v2.js"),
-            False
-        )
+        # Usar a API assíncrona correta para registrar recursos estáticos
+        card_path = hass.config.path("custom_components", DOMAIN, "entity-manager-card-final.js")
         
-        # Tentar registrar via frontend (método mais novo)
-        try:
-            hass.data.setdefault("frontend_extra_module_url", set()).add("/local/entity-manager-card-v2.js")
-        except Exception:
-            # Fallback para método antigo
-            from homeassistant.components.frontend import add_extra_js_url
-            add_extra_js_url(hass, "/local/entity-manager-card-v2.js")
+        # Verificar se o arquivo existe
+        if os.path.exists(card_path):
+            await hass.http.async_register_static_paths([
+                StaticPathConfig(
+                    "/local/entity-manager-card-final.js",
+                    card_path,
+                    False
+                )
+            ])
+            _LOGGER.info("Frontend resources registered successfully via async API")
+        else:
+            _LOGGER.warning("Card file not found: %s", card_path)
             
-        _LOGGER.info("Frontend resources registered successfully")
-        
     except Exception as e:
         _LOGGER.error("Error registering frontend resources: %s", e)
-        _LOGGER.warning("Manual registration required. Add resource manually to Lovelace.")
+        # Fallback para método antigo se necessário
+        try:
+            from homeassistant.components.frontend import add_extra_js_url
+            add_extra_js_url(hass, "/local/entity-manager-card-final.js")
+            _LOGGER.info("Frontend resources registered via fallback method")
+        except Exception as fallback_error:
+            _LOGGER.error("Fallback registration also failed: %s", fallback_error)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
