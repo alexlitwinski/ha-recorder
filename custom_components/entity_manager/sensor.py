@@ -36,6 +36,7 @@ class EntityManagerSensor(SensorEntity):
         self._attr_name = "Entity Manager Stats"
         self._attr_unique_id = f"{DOMAIN}_stats"
         self._attr_icon = "mdi:view-grid"
+        self._attributes = {}
         
     @property
     def state(self) -> int:
@@ -43,8 +44,16 @@ class EntityManagerSensor(SensorEntity):
         return len(self._manager._config)
     
     @property
-    async def extra_state_attributes(self) -> Dict[str, Any]:
+    def extra_state_attributes(self) -> Dict[str, Any]:
         """Return sensor attributes."""
+        return self._attributes
+    
+    async def async_update(self) -> None:
+        """Update the sensor."""
+        # Força reload da configuração se necessário
+        await self._manager.load_config()
+        
+        # Atualizar atributos
         entity_registry = await async_get_entity_registry(self.hass)
         
         total_entities = len(entity_registry.entities)
@@ -78,7 +87,7 @@ class EntityManagerSensor(SensorEntity):
             key = f"entities_with_{days}_days"
             recorder_config[key] = recorder_config.get(key, 0) + 1
         
-        return {
+        self._attributes = {
             "total_entities": total_entities,
             "managed_entities": managed_entities,
             "enabled_entities": enabled_entities,
@@ -88,8 +97,3 @@ class EntityManagerSensor(SensorEntity):
             "recorder_config": recorder_config,
             "config_file": self._manager._config_path,
         }
-    
-    async def async_update(self) -> None:
-        """Update the sensor."""
-        # Força reload da configuração se necessário
-        await self._manager.load_config()
