@@ -43,9 +43,9 @@ class EntityManagerSensor(SensorEntity):
         return len(self._manager._config)
     
     @property
-    def extra_state_attributes(self) -> Dict[str, Any]:
+    async def extra_state_attributes(self) -> Dict[str, Any]:
         """Return sensor attributes."""
-        entity_registry = async_get_entity_registry(self.hass)
+        entity_registry = await async_get_entity_registry(self.hass)
         
         total_entities = len(entity_registry.entities)
         managed_entities = len(self._manager._config)
@@ -58,11 +58,25 @@ class EntityManagerSensor(SensorEntity):
             domain = entity.entity_id.split('.')[0]
             domains[domain] = domains.get(domain, 0) + 1
         
+        # Estados das entidades
+        states = {}
+        for entity in entity_registry.entities.values():
+            state_obj = self.hass.states.get(entity.entity_id)
+            if state_obj is None:
+                state = "not_provided"
+            elif state_obj.state == "unavailable":
+                state = "unavailable"
+            else:
+                state = state_obj.state
+            
+            states[state] = states.get(state, 0) + 1
+        
         # Configurações de recorder por dias
         recorder_config = {}
         for entity_id, config in self._manager._config.items():
             days = config.get('recorder_days', 10)
-            recorder_config[f"entities_with_{days}_days"] = recorder_config.get(f"entities_with_{days}_days", 0) + 1
+            key = f"entities_with_{days}_days"
+            recorder_config[key] = recorder_config.get(key, 0) + 1
         
         return {
             "total_entities": total_entities,
@@ -70,6 +84,7 @@ class EntityManagerSensor(SensorEntity):
             "enabled_entities": enabled_entities,
             "disabled_entities": disabled_entities,
             "domains": domains,
+            "states": states,
             "recorder_config": recorder_config,
             "config_file": self._manager._config_path,
         }
