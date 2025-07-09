@@ -14,7 +14,7 @@
         
         .header {
             display: flex;
-            justify-content: between;
+            justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
             padding: 20px;
@@ -50,6 +50,8 @@
             border: 1px solid var(--divider-color, #e0e0e0);
             border-radius: 4px;
             font-size: 14px;
+            background: var(--card-background-color, white);
+            color: var(--primary-text-color, #212121);
         }
         
         .bulk-actions {
@@ -61,6 +63,7 @@
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             align-items: center;
+            flex-wrap: wrap;
         }
         
         .bulk-actions button {
@@ -92,9 +95,14 @@
             color: white;
         }
         
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-success:hover { opacity: 0.9; }
+        .btn-danger:hover { opacity: 0.9; }
+        .btn-warning:hover { opacity: 0.9; }
+        
         .entities-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
             gap: 15px;
         }
         
@@ -104,11 +112,16 @@
             padding: 15px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             border-left: 4px solid var(--primary-color, #03a9f4);
+            transition: all 0.2s;
         }
         
         .entity-card.disabled {
             opacity: 0.6;
             border-left-color: #ccc;
+        }
+        
+        .entity-card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
         }
         
         .entity-header {
@@ -118,15 +131,21 @@
             margin-bottom: 10px;
         }
         
+        .entity-info {
+            flex: 1;
+        }
+        
         .entity-name {
             font-weight: 500;
             font-size: 16px;
             margin-bottom: 4px;
+            color: var(--primary-text-color, #212121);
         }
         
         .entity-id {
             font-size: 12px;
             color: var(--secondary-text-color, #757575);
+            font-family: monospace;
         }
         
         .entity-state {
@@ -134,17 +153,39 @@
             padding: 4px 8px;
             border-radius: 4px;
             background: var(--divider-color, #e0e0e0);
+            white-space: nowrap;
+            margin-left: 10px;
         }
+        
+        .entity-state.on { background: #4caf50; color: white; }
+        .entity-state.off { background: #f44336; color: white; }
+        .entity-state.unavailable { background: #9e9e9e; color: white; }
+        .entity-state.not_provided { background: #ff9800; color: white; }
+        .entity-state.unknown { background: #607d8b; color: white; }
         
         .entity-controls {
             display: flex;
             gap: 10px;
             align-items: center;
-            margin-top: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .control-group label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--secondary-text-color, #757575);
         }
         
         .entity-controls input[type="checkbox"] {
             transform: scale(1.2);
+            cursor: pointer;
         }
         
         .entity-controls input[type="number"] {
@@ -152,6 +193,8 @@
             padding: 4px 8px;
             border: 1px solid var(--divider-color, #e0e0e0);
             border-radius: 4px;
+            background: var(--card-background-color, white);
+            color: var(--primary-text-color, #212121);
         }
         
         .entity-controls button {
@@ -179,6 +222,7 @@
             padding: 15px;
             border-radius: 4px;
             margin-bottom: 20px;
+            border-left: 4px solid #c62828;
         }
         
         .success {
@@ -187,11 +231,55 @@
             padding: 15px;
             border-radius: 4px;
             margin-bottom: 20px;
+            border-left: 4px solid #2e7d32;
+        }
+        
+        .info {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border-left: 4px solid #1976d2;
         }
         
         .selected-count {
             font-weight: 500;
             margin-right: 10px;
+            color: var(--primary-text-color, #212121);
+        }
+        
+        .no-entities {
+            text-align: center;
+            padding: 40px;
+            color: var(--secondary-text-color, #757575);
+            font-size: 16px;
+        }
+        
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: var(--card-background-color, white);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-color, #03a9f4);
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: var(--secondary-text-color, #757575);
+            margin-top: 2px;
         }
     </style>
 </head>
@@ -203,30 +291,50 @@
     
     <div id="message-area"></div>
     
+    <div class="stats" id="statsContainer" style="display: none;">
+        <div class="stat-item">
+            <div class="stat-number" id="totalEntities">0</div>
+            <div class="stat-label">Total</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number" id="enabledEntities">0</div>
+            <div class="stat-label">Habilitadas</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number" id="disabledEntities">0</div>
+            <div class="stat-label">Desabilitadas</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number" id="filteredEntities">0</div>
+            <div class="stat-label">Exibidas</div>
+        </div>
+    </div>
+    
     <div class="filters">
         <div class="filter-group">
             <label>Buscar por Nome/ID:</label>
-            <input type="text" id="searchFilter" placeholder="Digite para filtrar..." onkeyup="filterEntities()">
+            <input type="text" id="searchFilter" placeholder="Digite para filtrar...">
         </div>
         <div class="filter-group">
-            <label>Estado:</label>
-            <select id="stateFilter" onchange="filterEntities()">
+            <label>Estado da Entidade:</label>
+            <select id="stateFilter">
                 <option value="">Todos</option>
-                <option value="on">Ligado</option>
-                <option value="off">Desligado</option>
+                <option value="on">Ligado (on)</option>
+                <option value="off">Desligado (off)</option>
                 <option value="unavailable">Indisponível</option>
+                <option value="not_provided">Não Fornecido</option>
                 <option value="unknown">Desconhecido</option>
             </select>
         </div>
         <div class="filter-group">
             <label>Domínio:</label>
-            <select id="domainFilter" onchange="filterEntities()">
+            <select id="domainFilter">
                 <option value="">Todos</option>
             </select>
         </div>
         <div class="filter-group">
             <label>Status:</label>
-            <select id="enabledFilter" onchange="filterEntities()">
+            <select id="enabledFilter">
                 <option value="">Todos</option>
                 <option value="enabled">Habilitados</option>
                 <option value="disabled">Desabilitados</option>
@@ -251,54 +359,47 @@
 
     <script>
         let allEntities = [];
+        let filteredEntities = [];
         let selectedEntities = new Set();
         
         // Conectar com Home Assistant
         const hass = parent.hass || window.hass;
         
+        // Setup event listeners nos filtros
+        function setupFilterListeners() {
+            const filters = ['searchFilter', 'stateFilter', 'domainFilter', 'enabledFilter'];
+            filters.forEach(filterId => {
+                const element = document.getElementById(filterId);
+                if (element) {
+                    element.removeEventListener('input', filterEntities);
+                    element.removeEventListener('change', filterEntities);
+                    element.addEventListener('input', filterEntities);
+                    element.addEventListener('change', filterEntities);
+                }
+            });
+        }
+        
         async function loadEntities() {
             try {
                 showMessage('Carregando entidades...', 'info');
                 
-                // Buscar todas as entidades
-                const states = await hass.callWS({
-                    type: 'get_states'
-                });
+                // Salvar valores dos filtros
+                const currentFilters = saveFilters();
                 
-                const entityRegistry = await hass.callWS({
-                    type: 'config/entity_registry/list'
-                });
-                
-                // Buscar configurações do entity manager
-                let entityConfigs = {};
-                try {
-                    const response = await hass.callApi('GET', 'entity_manager/config');
-                    entityConfigs = response || {};
-                } catch (e) {
-                    console.log('No existing config found, using defaults');
-                }
-                
-                // Combinar dados
-                allEntities = entityRegistry.map(entity => {
-                    const state = states.find(s => s.entity_id === entity.entity_id);
-                    const config = entityConfigs[entity.entity_id] || {};
-                    
-                    return {
-                        entity_id: entity.entity_id,
-                        name: entity.name || entity.entity_id,
-                        domain: entity.entity_id.split('.')[0],
-                        platform: entity.platform,
-                        enabled: !entity.disabled_by,
-                        state: state ? state.state : 'unavailable',
-                        attributes: state ? state.attributes : {},
-                        recorder_days: config.recorder_days || 10
-                    };
-                });
+                // Buscar todas as entidades via API
+                const response = await hass.callApi('GET', 'entity_manager/entities');
+                allEntities = response || [];
                 
                 populateDomainFilter();
+                
+                // Restaurar filtros
+                restoreFilters(currentFilters);
+                
                 filterEntities();
-                updateSelectedCount();
-                showMessage('Entidades carregadas com sucesso!', 'success');
+                updateStats();
+                setupFilterListeners();
+                
+                showMessage(`${allEntities.length} entidades carregadas com sucesso!`, 'success');
                 
             } catch (error) {
                 console.error('Error loading entities:', error);
@@ -306,13 +407,39 @@
             }
         }
         
+        function saveFilters() {
+            return {
+                search: document.getElementById('searchFilter')?.value || '',
+                state: document.getElementById('stateFilter')?.value || '',
+                domain: document.getElementById('domainFilter')?.value || '',
+                enabled: document.getElementById('enabledFilter')?.value || ''
+            };
+        }
+        
+        function restoreFilters(filters) {
+            if (filters.search) document.getElementById('searchFilter').value = filters.search;
+            if (filters.state) document.getElementById('stateFilter').value = filters.state;
+            if (filters.domain) document.getElementById('domainFilter').value = filters.domain;
+            if (filters.enabled) document.getElementById('enabledFilter').value = filters.enabled;
+        }
+        
         function populateDomainFilter() {
             const domains = [...new Set(allEntities.map(e => e.domain))].sort();
             const domainFilter = document.getElementById('domainFilter');
+            const currentValue = domainFilter.value;
+            
             domainFilter.innerHTML = '<option value="">Todos</option>';
             domains.forEach(domain => {
-                domainFilter.innerHTML += `<option value="${domain}">${domain}</option>`;
+                const option = document.createElement('option');
+                option.value = domain;
+                option.textContent = domain;
+                domainFilter.appendChild(option);
             });
+            
+            // Restaurar valor selecionado
+            if (currentValue && domains.includes(currentValue)) {
+                domainFilter.value = currentValue;
+            }
         }
         
         function filterEntities() {
@@ -321,7 +448,7 @@
             const domainFilter = document.getElementById('domainFilter').value;
             const enabledFilter = document.getElementById('enabledFilter').value;
             
-            const filtered = allEntities.filter(entity => {
+            filteredEntities = allEntities.filter(entity => {
                 const matchesSearch = !searchText || 
                     entity.entity_id.toLowerCase().includes(searchText) || 
                     entity.name.toLowerCase().includes(searchText);
@@ -335,22 +462,58 @@
                 return matchesSearch && matchesState && matchesDomain && matchesEnabled;
             });
             
-            renderEntities(filtered);
+            renderEntities();
+            updateStats();
         }
         
-        function renderEntities(entities) {
+        function renderEntities() {
             const container = document.getElementById('entitiesContainer');
             
-            if (entities.length === 0) {
-                container.innerHTML = '<div class="loading">Nenhuma entidade encontrada.</div>';
+            if (allEntities.length === 0) {
+                container.innerHTML = '<div class="loading">Carregando entidades...</div>';
+                return;
+            }
+            
+            if (filteredEntities.length === 0) {
+                container.innerHTML = '<div class="no-entities">Nenhuma entidade encontrada com os filtros aplicados.</div>';
                 return;
             }
             
             container.innerHTML = `
                 <div class="entities-grid">
-                    ${entities.map(entity => createEntityCard(entity)).join('')}
+                    ${filteredEntities.map(entity => createEntityCard(entity)).join('')}
                 </div>
             `;
+            
+            // Reativar listeners dos checkboxes
+            setupEntityListeners();
+        }
+        
+        function setupEntityListeners() {
+            // Adicionar listeners para os checkboxes de seleção
+            filteredEntities.forEach(entity => {
+                const selectCheckbox = document.querySelector(`[data-select-entity="${entity.entity_id}"]`);
+                const enabledCheckbox = document.querySelector(`[data-enabled-entity="${entity.entity_id}"]`);
+                const recorderInput = document.querySelector(`[data-recorder-entity="${entity.entity_id}"]`);
+                
+                if (selectCheckbox) {
+                    selectCheckbox.addEventListener('change', function() {
+                        toggleSelection(entity.entity_id, this.checked);
+                    });
+                }
+                
+                if (enabledCheckbox) {
+                    enabledCheckbox.addEventListener('change', function() {
+                        toggleEntity(entity.entity_id, this.checked);
+                    });
+                }
+                
+                if (recorderInput) {
+                    recorderInput.addEventListener('change', function() {
+                        updateRecorderDays(entity.entity_id, this.value);
+                    });
+                }
+            });
         }
         
         function createEntityCard(entity) {
@@ -358,32 +521,39 @@
             return `
                 <div class="entity-card ${!entity.enabled ? 'disabled' : ''}" data-entity-id="${entity.entity_id}">
                     <div class="entity-header">
-                        <div>
+                        <div class="entity-info">
                             <div class="entity-name">${entity.name}</div>
                             <div class="entity-id">${entity.entity_id}</div>
                         </div>
-                        <div class="entity-state">${entity.state}</div>
+                        <div class="entity-state ${entity.state}">${entity.state}</div>
                     </div>
                     <div class="entity-controls">
-                        <input type="checkbox" ${isSelected ? 'checked' : ''} 
-                               onchange="toggleSelection('${entity.entity_id}')">
-                        <label>Habilitado:</label>
-                        <input type="checkbox" ${entity.enabled ? 'checked' : ''} 
-                               onchange="toggleEntity('${entity.entity_id}', this.checked)">
-                        <label>Dias:</label>
-                        <input type="number" value="${entity.recorder_days}" min="0" max="365"
-                               onchange="updateRecorderDays('${entity.entity_id}', this.value)">
+                        <div class="control-group">
+                            <input type="checkbox" ${isSelected ? 'checked' : ''} 
+                                   data-select-entity="${entity.entity_id}">
+                            <label>Selecionar</label>
+                        </div>
+                        <div class="control-group">
+                            <input type="checkbox" ${entity.enabled ? 'checked' : ''} 
+                                   data-enabled-entity="${entity.entity_id}">
+                            <label>${entity.enabled ? 'Habilitado' : 'Desabilitado'}</label>
+                        </div>
+                        <div class="control-group">
+                            <label>Dias:</label>
+                            <input type="number" value="${entity.recorder_days}" min="0" max="365"
+                                   data-recorder-entity="${entity.entity_id}">
+                        </div>
                         <button class="toggle-btn" onclick="purgeEntity('${entity.entity_id}')">🗑️</button>
                     </div>
                 </div>
             `;
         }
         
-        function toggleSelection(entityId) {
-            if (selectedEntities.has(entityId)) {
-                selectedEntities.delete(entityId);
-            } else {
+        function toggleSelection(entityId, checked) {
+            if (checked) {
                 selectedEntities.add(entityId);
+            } else {
+                selectedEntities.delete(entityId);
             }
             updateSelectedCount();
         }
@@ -392,20 +562,42 @@
             document.getElementById('selectedCount').textContent = selectedEntities.size;
         }
         
+        function updateStats() {
+            const statsContainer = document.getElementById('statsContainer');
+            
+            if (allEntities.length > 0) {
+                statsContainer.style.display = 'flex';
+                
+                const enabled = allEntities.filter(e => e.enabled).length;
+                const disabled = allEntities.length - enabled;
+                
+                document.getElementById('totalEntities').textContent = allEntities.length;
+                document.getElementById('enabledEntities').textContent = enabled;
+                document.getElementById('disabledEntities').textContent = disabled;
+                document.getElementById('filteredEntities').textContent = filteredEntities.length;
+            } else {
+                statsContainer.style.display = 'none';
+            }
+        }
+        
         function selectAll() {
-            const visibleEntities = document.querySelectorAll('.entity-card');
-            visibleEntities.forEach(card => {
-                const entityId = card.dataset.entityId;
-                selectedEntities.add(entityId);
-                const checkbox = card.querySelector('input[type="checkbox"]');
-                checkbox.checked = true;
+            selectedEntities.clear();
+            filteredEntities.forEach(entity => {
+                selectedEntities.add(entity.entity_id);
             });
+            
+            // Atualizar checkboxes visuais
+            document.querySelectorAll('[data-select-entity]').forEach(cb => {
+                const entityId = cb.getAttribute('data-select-entity');
+                cb.checked = selectedEntities.has(entityId);
+            });
+            
             updateSelectedCount();
         }
         
         function selectNone() {
             selectedEntities.clear();
-            document.querySelectorAll('.entity-card input[type="checkbox"]').forEach(cb => cb.checked = false);
+            document.querySelectorAll('[data-select-entity]').forEach(cb => cb.checked = false);
             updateSelectedCount();
         }
         
@@ -422,14 +614,28 @@
                     entity.enabled = enabled;
                 }
                 
+                // Atualizar label visual
+                const checkbox = document.querySelector(`[data-enabled-entity="${entityId}"]`);
+                if (checkbox) {
+                    const label = checkbox.parentElement.querySelector('label');
+                    if (label) {
+                        label.textContent = enabled ? 'Habilitado' : 'Desabilitado';
+                    }
+                }
+                
                 showMessage(`Entidade ${enabled ? 'habilitada' : 'desabilitada'} com sucesso!`, 'success');
+                
+                // Reapply filters to update visual state
                 filterEntities();
                 
             } catch (error) {
                 console.error('Error toggling entity:', error);
                 showMessage('Erro ao alterar entidade: ' + error.message, 'error');
                 // Reverter checkbox
-                event.target.checked = !enabled;
+                const checkbox = document.querySelector(`[data-enabled-entity="${entityId}"]`);
+                if (checkbox) {
+                    checkbox.checked = !enabled;
+                }
             }
         }
         
@@ -467,7 +673,16 @@
                 });
                 
                 showMessage(`${selectedEntities.size} entidades habilitadas com sucesso!`, 'success');
-                loadEntities();
+                
+                // Atualizar entidades locais
+                selectedEntities.forEach(entityId => {
+                    const entity = allEntities.find(e => e.entity_id === entityId);
+                    if (entity) {
+                        entity.enabled = true;
+                    }
+                });
+                
+                filterEntities();
                 
             } catch (error) {
                 showMessage('Erro na atualização em lote: ' + error.message, 'error');
@@ -487,7 +702,16 @@
                 });
                 
                 showMessage(`${selectedEntities.size} entidades desabilitadas com sucesso!`, 'success');
-                loadEntities();
+                
+                // Atualizar entidades locais
+                selectedEntities.forEach(entityId => {
+                    const entity = allEntities.find(e => e.entity_id === entityId);
+                    if (entity) {
+                        entity.enabled = false;
+                    }
+                });
+                
+                filterEntities();
                 
             } catch (error) {
                 showMessage('Erro na atualização em lote: ' + error.message, 'error');
@@ -513,7 +737,16 @@
                 });
                 
                 showMessage(`Dias do recorder atualizados para ${selectedEntities.size} entidades!`, 'success');
-                loadEntities();
+                
+                // Atualizar entidades locais
+                selectedEntities.forEach(entityId => {
+                    const entity = allEntities.find(e => e.entity_id === entityId);
+                    if (entity) {
+                        entity.recorder_days = parseInt(days);
+                    }
+                });
+                
+                filterEntities();
                 
             } catch (error) {
                 showMessage('Erro na atualização em lote: ' + error.message, 'error');
