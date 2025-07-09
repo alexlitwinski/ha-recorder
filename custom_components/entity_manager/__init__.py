@@ -86,17 +86,27 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def _register_frontend_resources(hass: HomeAssistant):
     """Register frontend resources for the custom card."""
-    from homeassistant.components.frontend import add_extra_js_url
-    
-    # Registrar o arquivo do card customizado
-    add_extra_js_url(hass, f"/entity_manager_card.js")
-    
-    # Registrar a rota para servir o arquivo
-    hass.http.register_static_path(
-        "/entity_manager_card.js",
-        hass.config.path("custom_components", DOMAIN, "entity-manager-card.js"),
-        False
-    )
+    try:
+        # Registrar a rota para servir o arquivo
+        hass.http.register_static_path(
+            "/local/entity-manager-card.js",
+            hass.config.path("custom_components", DOMAIN, "entity-manager-card.js"),
+            False
+        )
+        
+        # Tentar registrar via frontend (método mais novo)
+        try:
+            hass.data.setdefault("frontend_extra_module_url", set()).add("/local/entity-manager-card.js")
+        except Exception:
+            # Fallback para método antigo
+            from homeassistant.components.frontend import add_extra_js_url
+            add_extra_js_url(hass, "/local/entity-manager-card.js")
+            
+        _LOGGER.info("Frontend resources registered successfully")
+        
+    except Exception as e:
+        _LOGGER.error("Error registering frontend resources: %s", e)
+        _LOGGER.warning("Manual registration required. Add resource manually to Lovelace.")
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
