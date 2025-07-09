@@ -31,6 +31,7 @@ from .const import (
     ATTR_FORCE_PURGE,
     EVENT_ENTITY_MANAGER_UPDATED,
 )
+from .api import setup_api
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -71,20 +72,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Register services
     await _register_services(hass, manager)
     
-    # Register frontend panel
-    hass.http.register_static_path(
-        f"/{DOMAIN}",
-        hass.config.path("custom_components", DOMAIN, "frontend"),
-        cache_headers=False,
-    )
+    # Setup API views
+    setup_api(hass)
+    
+    # Setup sensor platform
+    await hass.config_entries.async_forward_entry_setups(entry, ["sensor"])
     
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload Entity Manager config entry."""
-    hass.data.pop(DOMAIN, None)
-    return True
+    # Unload platforms
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, ["sensor"])
+    
+    if unload_ok:
+        hass.data.pop(DOMAIN, None)
+    
+    return unload_ok
 
 
 async def _register_services(hass: HomeAssistant, manager: "EntityManager"):
