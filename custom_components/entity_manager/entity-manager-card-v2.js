@@ -5,6 +5,7 @@ class EntityManagerCard extends HTMLElement {
         this.entities = [];
         this.selectedEntities = new Set();
         this.filteredEntities = [];
+        this.isLoading = false;
     }
 
     setConfig(config) {
@@ -13,70 +14,64 @@ class EntityManagerCard extends HTMLElement {
             show_filters: config.show_filters !== false,
             show_bulk_actions: config.show_bulk_actions !== false,
             domains: config.domains || [],
-            max_entities: config.max_entities || 50,
+            max_entities: config.max_entities || 100,
+            auto_refresh: config.auto_refresh || false,
             ...config
         };
     }
 
     set hass(hass) {
         this._hass = hass;
-        this.loadEntities();
+        if (!this.isLoading && this.entities.length === 0) {
+            this.loadEntities();
+        }
     }
 
     async loadEntities() {
-        if (!this._hass) return;
+        if (!this._hass || this.isLoading) return;
 
+        this.isLoading = true;
+        
         try {
-            // Buscar entidades do registry
-            const entityRegistry = await this._hass.callWS({
-                type: 'config/entity_registry/list'
-            });
+            // Usar a API do entity manager diretamente
+            const response = await this._hass.callApi('GET', 'entity_manager/entities');
+            let entities = response || [];
 
-            // Buscar configurações do entity manager
-            let entityConfigs = {};
-            try {
-                const response = await this._hass.callApi('GET', 'entity_manager/config');
-                entityConfigs = response || {};
-            } catch (e) {
-                console.log('No existing config found, using defaults');
+            // Aplicar filtros de configuração
+            if (this.config.domains.length > 0) {
+                entities = entities.filter(entity => 
+                    this.config.domains.includes(entity.domain)
+                );
             }
 
-            // Combinar dados
-            this.entities = entityRegistry
-                .filter(entity => {
-                    if (this.config.domains.length > 0) {
-                        return this.config.domains.includes(entity.entity_id.split('.')[0]);
-                    }
-                    return true;
-                })
-                .slice(0, this.config.max_entities)
-                .map(entity => {
-                    const state = this._hass.states[entity.entity_id];
-                    const config = entityConfigs[entity.entity_id] || {};
-                    
-                    return {
-                        entity_id: entity.entity_id,
-                        name: entity.name || entity.entity_id,
-                        domain: entity.entity_id.split('.')[0],
-                        platform: entity.platform,
-                        enabled: !entity.disabled_by,
-                        state: state ? state.state : 'unavailable',
-                        attributes: state ? state.attributes : {},
-                        recorder_days: config.recorder_days || 10
-                    };
-                });
+            // Limitar número de entidades
+            if (this.config.max_entities > 0) {
+                entities = entities.slice(0, this.config.max_entities);
+            }
 
+            this.entities = entities;
             this.filteredEntities = [...this.entities];
             this.render();
+            
         } catch (error) {
             console.error('Error loading entities:', error);
             this.showError('Erro ao carregar entidades: ' + error.message);
+        } finally {
+            this.isLoading = false;
         }
     }
 
     render() {
         this.shadowRoot.innerHTML = `
             <style>
+                :host {
+                    display: block;
+                    background: var(--card-background-color);
+                    border-radius: 8px;
+                    overflow: hidden;
+                    box-shadow: var(--shadow-elevation-medium);
+                }
+                
                 .card-header {
                     display: flex;
                     justify-content: space-between;
@@ -84,7 +79,26 @@ class EntityManagerCard extends HTMLElement {
                     padding: 16px;
                     background: var(--primary-color);
                     color: var(--text-primary-color);
-                    border-radius: 8px 8px 0 0;
+                }
+                
+                .card-header h3 {
+                    margin: 0;
+                    font-size: 18px;
+                    font-weight: 500;
+                }
+                
+                .refresh-btn {
+                    background: rgba(255,255,255,0.2);
+                    border: none;
+                    color: var(--text-primary-color);
+                    padding: 8px 12px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 14px;
+                }
+                
+                .refresh-btn:hover {
+                    background: rgba(255,255,255,0.3);
                 }
                 
                 .filters {
@@ -100,6 +114,7 @@ class EntityManagerCard extends HTMLElement {
                     display: flex;
                     flex-direction: column;
                     gap: 4px;
+                    min-width: 120px;
                 }
                 
                 .filter-group label {
@@ -135,7 +150,7 @@ class EntityManagerCard extends HTMLElement {
                     cursor: pointer;
                     font-size: 12px;
                     font-weight: 500;
-                    transition: background-color 0.2s;
+                    transition: opacity 0.2s;
                 }
                 
                 .btn-primary { background: var(--primary-color); color: var(--text-primary-color); }
@@ -143,10 +158,9 @@ class EntityManagerCard extends HTMLElement {
                 .btn-danger { background: #f44336; color: white; }
                 .btn-warning { background: #ff9800; color: white; }
                 
-                .btn-primary:hover { background: var(--primary-color); opacity: 0.8; }
-                .btn-success:hover { background: #45a049; }
-                .btn-danger:hover { background: #da190b; }
-                .btn-warning:hover { background: #e68900; }
+                .btn-primary:hover, .btn-success:hover, .btn-danger:hover, .btn-warning:hover {
+                    opacity: 0.8;
+                }
                 
                 .entities-container {
                     max-height: 400px;
@@ -183,31 +197,52 @@ class EntityManagerCard extends HTMLElement {
                     font-weight: 500;
                     color: var(--primary-text-color);
                     margin-bottom: 2px;
+                    font-size: 14px;
                 }
                 
                 .entity-id {
-                    font-size: 12px;
+                    font-size: 11px;
                     color: var(--secondary-text-color);
+                    font-family: monospace;
                 }
                 
                 .entity-state {
                     padding: 4px 8px;
                     border-radius: 4px;
-                    font-size: 12px;
+                    font-size: 11px;
                     margin-right: 12px;
-                    background: var(--state-color, var(--secondary-background-color));
-                    color: var(--primary-text-color);
+                    color: white;
+                    white-space: nowrap;
                 }
+                
+                .entity-state.on { background: #4caf50; }
+                .entity-state.off { background: #f44336; }
+                .entity-state.unavailable { background: #9e9e9e; }
+                .entity-state.not_provided { background: #ff9800; }
+                .entity-state.unknown { background: #607d8b; }
                 
                 .entity-controls {
                     display: flex;
                     gap: 8px;
                     align-items: center;
+                    flex-wrap: wrap;
+                }
+                
+                .control-group {
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                }
+                
+                .control-group label {
+                    font-size: 11px;
+                    color: var(--secondary-text-color);
+                    white-space: nowrap;
                 }
                 
                 .entity-controls input[type="checkbox"] {
-                    transform: scale(1.2);
-                    margin-right: 8px;
+                    transform: scale(1.1);
+                    cursor: pointer;
                 }
                 
                 .entity-controls input[type="number"] {
@@ -217,13 +252,7 @@ class EntityManagerCard extends HTMLElement {
                     border-radius: 4px;
                     background: var(--card-background-color);
                     color: var(--primary-text-color);
-                    font-size: 12px;
-                }
-                
-                .entity-controls label {
-                    font-size: 12px;
-                    color: var(--secondary-text-color);
-                    margin-right: 4px;
+                    font-size: 11px;
                 }
                 
                 .toggle-btn {
@@ -231,7 +260,7 @@ class EntityManagerCard extends HTMLElement {
                     border: none;
                     border-radius: 4px;
                     cursor: pointer;
-                    font-size: 12px;
+                    font-size: 11px;
                     background: var(--primary-color);
                     color: var(--text-primary-color);
                 }
@@ -248,6 +277,7 @@ class EntityManagerCard extends HTMLElement {
                     color: #c62828;
                     border-radius: 4px;
                     margin: 8px;
+                    border-left: 4px solid #c62828;
                 }
                 
                 .success {
@@ -256,6 +286,7 @@ class EntityManagerCard extends HTMLElement {
                     color: #2e7d32;
                     border-radius: 4px;
                     margin: 8px;
+                    border-left: 4px solid #2e7d32;
                 }
                 
                 .loading {
@@ -269,13 +300,34 @@ class EntityManagerCard extends HTMLElement {
                     padding: 40px;
                     color: var(--secondary-text-color);
                 }
+                
+                .stats {
+                    display: flex;
+                    justify-content: space-around;
+                    padding: 12px 16px;
+                    background: var(--secondary-background-color);
+                    border-bottom: 1px solid var(--divider-color);
+                    font-size: 12px;
+                }
+                
+                .stat-item {
+                    text-align: center;
+                    color: var(--secondary-text-color);
+                }
+                
+                .stat-number {
+                    font-weight: bold;
+                    color: var(--primary-text-color);
+                    display: block;
+                }
             </style>
             
             <div class="card-header">
                 <h3>${this.config.title}</h3>
-                <button class="btn-primary" onclick="this.getRootNode().host.loadEntities()">🔄</button>
+                <button class="refresh-btn" id="refreshBtn">🔄 Recarregar</button>
             </div>
             
+            ${this.renderStats()}
             ${this.config.show_filters ? this.renderFilters() : ''}
             ${this.config.show_bulk_actions ? this.renderBulkActions() : ''}
             
@@ -289,6 +341,34 @@ class EntityManagerCard extends HTMLElement {
         this.setupEventListeners();
     }
     
+    renderStats() {
+        if (this.entities.length === 0) return '';
+        
+        const enabled = this.entities.filter(e => e.enabled).length;
+        const disabled = this.entities.length - enabled;
+        
+        return `
+            <div class="stats">
+                <div class="stat-item">
+                    <span class="stat-number">${this.entities.length}</span>
+                    Total
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">${enabled}</span>
+                    Habilitadas
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">${disabled}</span>
+                    Desabilitadas
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">${this.filteredEntities.length}</span>
+                    Exibidas
+                </div>
+            </div>
+        `;
+    }
+    
     renderFilters() {
         const domains = [...new Set(this.entities.map(e => e.domain))].sort();
         
@@ -297,6 +377,17 @@ class EntityManagerCard extends HTMLElement {
                 <div class="filter-group">
                     <label>Buscar:</label>
                     <input type="text" id="searchFilter" placeholder="Nome ou ID..." />
+                </div>
+                <div class="filter-group">
+                    <label>Estado:</label>
+                    <select id="stateFilter">
+                        <option value="">Todos</option>
+                        <option value="on">Ligado (on)</option>
+                        <option value="off">Desligado (off)</option>
+                        <option value="unavailable">Indisponível</option>
+                        <option value="not_provided">Não Fornecido</option>
+                        <option value="unknown">Desconhecido</option>
+                    </select>
                 </div>
                 <div class="filter-group">
                     <label>Domínio:</label>
@@ -321,22 +412,28 @@ class EntityManagerCard extends HTMLElement {
         return `
             <div class="bulk-actions">
                 <span class="selected-count">Selecionados: <span id="selectedCount">0</span></span>
-                <button class="btn-success" onclick="this.getRootNode().host.bulkEnable()">✅ Habilitar</button>
-                <button class="btn-danger" onclick="this.getRootNode().host.bulkDisable()">❌ Desabilitar</button>
+                <button class="btn-success" id="bulkEnableBtn">✅ Habilitar</button>
+                <button class="btn-danger" id="bulkDisableBtn">❌ Desabilitar</button>
                 <input type="number" id="bulkRecorderDays" placeholder="Dias" min="0" max="365" style="width: 60px;">
-                <button class="btn-primary" onclick="this.getRootNode().host.bulkUpdateRecorder()">📊 Definir Dias</button>
-                <button class="btn-warning" onclick="this.getRootNode().host.bulkPurge()">🗑️ Limpar</button>
+                <button class="btn-primary" id="bulkRecorderBtn">📊 Definir Dias</button>
+                <button class="btn-warning" id="bulkPurgeBtn">🗑️ Limpar</button>
+                <button class="btn-primary" id="selectAllBtn">☑️ Todos</button>
+                <button class="btn-primary" id="selectNoneBtn">☐ Limpar</button>
             </div>
         `;
     }
     
     renderEntities() {
-        if (this.entities.length === 0) {
+        if (this.isLoading) {
             return '<div class="loading">Carregando entidades...</div>';
         }
         
+        if (this.entities.length === 0) {
+            return '<div class="loading">Nenhuma entidade encontrada.</div>';
+        }
+        
         if (this.filteredEntities.length === 0) {
-            return '<div class="no-entities">Nenhuma entidade encontrada.</div>';
+            return '<div class="no-entities">Nenhuma entidade corresponde aos filtros.</div>';
         }
         
         return this.filteredEntities.map(entity => this.renderEntityRow(entity)).join('');
@@ -344,7 +441,6 @@ class EntityManagerCard extends HTMLElement {
     
     renderEntityRow(entity) {
         const isSelected = this.selectedEntities.has(entity.entity_id);
-        const stateColor = this.getStateColor(entity.state);
         
         return `
             <div class="entity-row ${!entity.enabled ? 'disabled' : ''}" data-entity-id="${entity.entity_id}">
@@ -352,54 +448,98 @@ class EntityManagerCard extends HTMLElement {
                     <div class="entity-name">${entity.name}</div>
                     <div class="entity-id">${entity.entity_id}</div>
                 </div>
-                <div class="entity-state" style="background-color: ${stateColor}">
+                <div class="entity-state ${entity.state}">
                     ${entity.state}
                 </div>
                 <div class="entity-controls">
-                    <input type="checkbox" ${isSelected ? 'checked' : ''} 
-                           onchange="this.getRootNode().host.toggleSelection('${entity.entity_id}')">
-                    <label>Ativo:</label>
-                    <input type="checkbox" ${entity.enabled ? 'checked' : ''} 
-                           onchange="this.getRootNode().host.toggleEntity('${entity.entity_id}', this.checked)">
-                    <label>Dias:</label>
-                    <input type="number" value="${entity.recorder_days}" min="0" max="365"
-                           onchange="this.getRootNode().host.updateRecorderDays('${entity.entity_id}', this.value)">
-                    <button class="toggle-btn" onclick="this.getRootNode().host.purgeEntity('${entity.entity_id}')">🗑️</button>
+                    <div class="control-group">
+                        <input type="checkbox" ${isSelected ? 'checked' : ''} 
+                               data-select="${entity.entity_id}">
+                        <label>Sel.</label>
+                    </div>
+                    <div class="control-group">
+                        <input type="checkbox" ${entity.enabled ? 'checked' : ''} 
+                               data-enabled="${entity.entity_id}">
+                        <label>${entity.enabled ? 'Hab.' : 'Des.'}</label>
+                    </div>
+                    <div class="control-group">
+                        <label>Dias:</label>
+                        <input type="number" value="${entity.recorder_days}" min="0" max="365"
+                               data-recorder="${entity.entity_id}">
+                    </div>
+                    <button class="toggle-btn" data-purge="${entity.entity_id}">🗑️</button>
                 </div>
             </div>
         `;
     }
     
-    getStateColor(state) {
-        const colors = {
-            'on': '#4caf50',
-            'off': '#f44336',
-            'unavailable': '#9e9e9e',
-            'unknown': '#ff9800'
-        };
-        return colors[state] || '#2196f3';
-    }
-    
     setupEventListeners() {
-        if (!this.config.show_filters) return;
+        // Botão refresh
+        const refreshBtn = this.shadowRoot.getElementById('refreshBtn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => this.loadEntities());
+        }
         
-        const searchFilter = this.shadowRoot.getElementById('searchFilter');
-        const domainFilter = this.shadowRoot.getElementById('domainFilter');
-        const enabledFilter = this.shadowRoot.getElementById('enabledFilter');
+        // Filtros
+        if (this.config.show_filters) {
+            ['searchFilter', 'stateFilter', 'domainFilter', 'enabledFilter'].forEach(id => {
+                const element = this.shadowRoot.getElementById(id);
+                if (element) {
+                    element.addEventListener('input', () => this.filterEntities());
+                    element.addEventListener('change', () => this.filterEntities());
+                }
+            });
+        }
         
-        if (searchFilter) {
-            searchFilter.addEventListener('input', () => this.filterEntities());
+        // Ações em lote
+        if (this.config.show_bulk_actions) {
+            const bulkActions = {
+                'bulkEnableBtn': () => this.bulkEnable(),
+                'bulkDisableBtn': () => this.bulkDisable(),
+                'bulkRecorderBtn': () => this.bulkUpdateRecorder(),
+                'bulkPurgeBtn': () => this.bulkPurge(),
+                'selectAllBtn': () => this.selectAll(),
+                'selectNoneBtn': () => this.selectNone()
+            };
+            
+            Object.entries(bulkActions).forEach(([id, handler]) => {
+                const element = this.shadowRoot.getElementById(id);
+                if (element) {
+                    element.addEventListener('click', handler);
+                }
+            });
         }
-        if (domainFilter) {
-            domainFilter.addEventListener('change', () => this.filterEntities());
-        }
-        if (enabledFilter) {
-            enabledFilter.addEventListener('change', () => this.filterEntities());
-        }
+        
+        // Event delegation para controles das entidades
+        this.shadowRoot.addEventListener('change', (e) => {
+            const target = e.target;
+            
+            if (target.hasAttribute('data-select')) {
+                const entityId = target.getAttribute('data-select');
+                this.toggleSelection(entityId, target.checked);
+            } else if (target.hasAttribute('data-enabled')) {
+                const entityId = target.getAttribute('data-enabled');
+                this.toggleEntity(entityId, target.checked);
+            } else if (target.hasAttribute('data-recorder')) {
+                const entityId = target.getAttribute('data-recorder');
+                this.updateRecorderDays(entityId, target.value);
+            }
+        });
+        
+        // Event delegation para botões
+        this.shadowRoot.addEventListener('click', (e) => {
+            const target = e.target;
+            
+            if (target.hasAttribute('data-purge')) {
+                const entityId = target.getAttribute('data-purge');
+                this.purgeEntity(entityId);
+            }
+        });
     }
     
     filterEntities() {
         const searchText = this.shadowRoot.getElementById('searchFilter')?.value.toLowerCase() || '';
+        const stateFilter = this.shadowRoot.getElementById('stateFilter')?.value || '';
         const domainFilter = this.shadowRoot.getElementById('domainFilter')?.value || '';
         const enabledFilter = this.shadowRoot.getElementById('enabledFilter')?.value || '';
         
@@ -408,22 +548,23 @@ class EntityManagerCard extends HTMLElement {
                 entity.entity_id.toLowerCase().includes(searchText) || 
                 entity.name.toLowerCase().includes(searchText);
             
+            const matchesState = !stateFilter || entity.state === stateFilter;
             const matchesDomain = !domainFilter || entity.domain === domainFilter;
             const matchesEnabled = !enabledFilter || 
                 (enabledFilter === 'enabled' && entity.enabled) ||
                 (enabledFilter === 'disabled' && !entity.enabled);
             
-            return matchesSearch && matchesDomain && matchesEnabled;
+            return matchesSearch && matchesState && matchesDomain && matchesEnabled;
         });
         
         this.render();
     }
     
-    toggleSelection(entityId) {
-        if (this.selectedEntities.has(entityId)) {
-            this.selectedEntities.delete(entityId);
-        } else {
+    toggleSelection(entityId, checked) {
+        if (checked) {
             this.selectedEntities.add(entityId);
+        } else {
+            this.selectedEntities.delete(entityId);
         }
         this.updateSelectedCount();
     }
@@ -433,6 +574,19 @@ class EntityManagerCard extends HTMLElement {
         if (countElement) {
             countElement.textContent = this.selectedEntities.size;
         }
+    }
+    
+    selectAll() {
+        this.selectedEntities.clear();
+        this.filteredEntities.forEach(entity => {
+            this.selectedEntities.add(entity.entity_id);
+        });
+        this.render();
+    }
+    
+    selectNone() {
+        this.selectedEntities.clear();
+        this.render();
     }
     
     async toggleEntity(entityId, enabled) {
@@ -612,7 +766,7 @@ window.customCards.push({
 
 // Adicionar ao console para debugging
 console.info(
-    '%c ENTITY-MANAGER-CARD %c v1.0.0 ',
+    '%c ENTITY-MANAGER-CARD %c v1.0.1 ',
     'color: orange; font-weight: bold; background: black',
     'color: white; font-weight: bold; background: dimgray'
 );
