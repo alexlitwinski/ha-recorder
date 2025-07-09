@@ -75,10 +75,28 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Setup API views
     setup_api(hass)
     
+    # Register the custom card
+    await _register_frontend_resources(hass)
+    
     # Setup sensor platform
     await hass.config_entries.async_forward_entry_setups(entry, ["sensor"])
     
     return True
+
+
+async def _register_frontend_resources(hass: HomeAssistant):
+    """Register frontend resources for the custom card."""
+    from homeassistant.components.frontend import add_extra_js_url
+    
+    # Registrar o arquivo do card customizado
+    add_extra_js_url(hass, f"/entity_manager_card.js")
+    
+    # Registrar a rota para servir o arquivo
+    hass.http.register_static_path(
+        "/entity_manager_card.js",
+        hass.config.path("custom_components", DOMAIN, "entity-manager-card.js"),
+        False
+    )
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
