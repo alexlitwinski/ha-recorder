@@ -89,18 +89,18 @@ async def _register_frontend_resources(hass: HomeAssistant):
     try:
         # Registrar a rota para servir o arquivo
         hass.http.register_static_path(
-            "/local/entity-manager-card.js",
-            hass.config.path("custom_components", DOMAIN, "entity-manager-card.js"),
+            "/local/entity-manager-card-v2.js",
+            hass.config.path("custom_components", DOMAIN, "entity-manager-card-v2.js"),
             False
         )
         
         # Tentar registrar via frontend (método mais novo)
         try:
-            hass.data.setdefault("frontend_extra_module_url", set()).add("/local/entity-manager-card.js")
+            hass.data.setdefault("frontend_extra_module_url", set()).add("/local/entity-manager-card-v2.js")
         except Exception:
             # Fallback para método antigo
             from homeassistant.components.frontend import add_extra_js_url
-            add_extra_js_url(hass, "/local/entity-manager-card.js")
+            add_extra_js_url(hass, "/local/entity-manager-card-v2.js")
             
         _LOGGER.info("Frontend resources registered successfully")
         
@@ -229,7 +229,7 @@ class EntityManager:
     
     async def update_entity_state(self, entity_id: str, enabled: bool):
         """Update entity enabled state."""
-        entity_registry = async_get_entity_registry(self.hass)
+        entity_registry = await async_get_entity_registry(self.hass)
         
         try:
             entity_registry.async_update_entity(
@@ -282,7 +282,7 @@ class EntityManager:
                          recorder_days: Optional[int] = None):
         """Bulk update entities."""
         try:
-            entity_registry = async_get_entity_registry(self.hass)
+            entity_registry = await async_get_entity_registry(self.hass)
             
             for entity_id in entity_ids:
                 # Update entity state if provided
@@ -358,22 +358,30 @@ class EntityManager:
             _LOGGER.error("Error purging recorder: %s", e)
             raise HomeAssistantError(f"Error purging recorder: {e}")
     
-    def get_all_entities(self) -> List[Dict[str, Any]]:
+    async def get_all_entities(self) -> List[Dict[str, Any]]:
         """Get all entities with their configurations."""
-        entity_registry = async_get_entity_registry(self.hass)
+        entity_registry = await async_get_entity_registry(self.hass)
         entities = []
         
         for entity in entity_registry.entities.values():
             config = self.get_entity_config(entity.entity_id)
             state = self.hass.states.get(entity.entity_id)
             
+            # Determinar o estado real
+            if state is None:
+                entity_state = "not_provided"
+            elif state.state == "unavailable":
+                entity_state = "unavailable"
+            else:
+                entity_state = state.state
+            
             entities.append({
                 "entity_id": entity.entity_id,
                 "name": entity.name or entity.entity_id,
                 "domain": entity.domain,
                 "platform": entity.platform,
-                "enabled": not entity.disabled,
-                "state": state.state if state else "unavailable",
+                "enabled": not bool(entity.disabled_by),
+                "state": entity_state,
                 "attributes": dict(state.attributes) if state else {},
                 "recorder_days": config.get("recorder_days", DEFAULT_RECORDER_DAYS),
             })
