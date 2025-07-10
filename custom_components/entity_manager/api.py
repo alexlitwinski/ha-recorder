@@ -8,7 +8,7 @@ from homeassistant.components.http import HomeAssistantView
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_registry import async_get as async_get_entity_registry
 
-from .const import DOMAIN
+from .const import DOMAIN, DEFAULT_RECORDER_DAYS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -39,10 +39,18 @@ class EntityManagerConfigView(HomeAssistantView):
                 content_type="application/json"
             )
         
-        return web.Response(
-            text=json.dumps(manager._config),
-            content_type="application/json"
-        )
+        try:
+            return web.Response(
+                text=json.dumps(manager._config),
+                content_type="application/json"
+            )
+        except Exception as e:
+            _LOGGER.error("Error getting config: %s", e)
+            return web.Response(
+                text=json.dumps({"error": str(e)}),
+                status=500,
+                content_type="application/json"
+            )
     
     async def post(self, request: web.Request) -> web.Response:
         """Update entity manager configuration."""
@@ -87,6 +95,7 @@ class EntityManagerEntitiesView(HomeAssistantView):
         manager = hass.data.get(DOMAIN)
         
         if not manager:
+            _LOGGER.error("Entity Manager not initialized")
             return web.Response(
                 text=json.dumps({"error": "Entity Manager not initialized"}),
                 status=500,
@@ -94,15 +103,32 @@ class EntityManagerEntitiesView(HomeAssistantView):
             )
         
         try:
+            _LOGGER.debug("API: Getting all entities")
+            
+            # Chamar a função do manager que já tem o tratamento correto
             entities = await manager.get_all_entities()
-            return web.Response(
-                text=json.dumps(entities),
-                content_type="application/json"
-            )
+            
+            _LOGGER.info("API: Successfully retrieved %d entities", len(entities))
+            
+            # Verificar se os dados são JSON-serializáveis antes de retornar
+            try:
+                json_data = json.dumps(entities)
+                return web.Response(
+                    text=json_data,
+                    content_type="application/json"
+                )
+            except (TypeError, ValueError) as json_error:
+                _LOGGER.error("API: JSON serialization error: %s", json_error)
+                return web.Response(
+                    text=json.dumps({"error": f"JSON serialization error: {str(json_error)}"}),
+                    status=500,
+                    content_type="application/json"
+                )
+            
         except Exception as e:
-            _LOGGER.error("Error getting entities: %s", e)
+            _LOGGER.error("API: Error getting entities: %s", e, exc_info=True)
             return web.Response(
-                text=json.dumps({"error": str(e)}),
+                text=json.dumps({"error": f"Error getting entities: {str(e)}"}),
                 status=500,
                 content_type="application/json"
             )
@@ -131,8 +157,9 @@ class EntityManagerPanelView(HomeAssistantView):
                 content_type="text/html"
             )
         except FileNotFoundError:
+            _LOGGER.warning("Panel HTML file not found: %s", panel_path)
             return web.Response(
-                text="<h1>Entity Manager Panel not found</h1>",
+                text="<h1>Entity Manager Panel not found</h1><p>Panel file is missing. Please check the installation.</p>",
                 status=404,
                 content_type="text/html"
             )

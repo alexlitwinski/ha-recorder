@@ -14,7 +14,6 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.entity_registry import async_get as async_get_entity_registry
 from homeassistant.helpers.device_registry import async_get as async_get_device_registry
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.components.http import StaticPathConfig
 
 from .const import (
     DOMAIN,
@@ -76,7 +75,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Setup API views
     setup_api(hass)
     
-    # Register the custom card (usando API assíncrona correta)
+    # Register the custom card (simplificado)
     await _register_frontend_resources(hass)
     
     # Setup sensor platform
@@ -88,31 +87,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def _register_frontend_resources(hass: HomeAssistant):
     """Register frontend resources for the custom card."""
     try:
-        # Usar a API assíncrona correta para registrar recursos estáticos
-        card_path = hass.config.path("custom_components", DOMAIN, "entity-manager-card-final.js")
+        _LOGGER.info("Frontend resource registration skipped - manual setup required")
+        _LOGGER.info("Copy entity-manager-card-final.js to /config/www/ and add to Lovelace resources")
         
-        # Verificar se o arquivo existe
-        if os.path.exists(card_path):
-            await hass.http.async_register_static_paths([
-                StaticPathConfig(
-                    "/local/entity-manager-card-final.js",
-                    card_path,
-                    False
-                )
-            ])
-            _LOGGER.info("Frontend resources registered successfully via async API")
-        else:
-            _LOGGER.warning("Card file not found: %s", card_path)
-            
     except Exception as e:
-        _LOGGER.error("Error registering frontend resources: %s", e)
-        # Fallback para método antigo se necessário
-        try:
-            from homeassistant.components.frontend import add_extra_js_url
-            add_extra_js_url(hass, "/local/entity-manager-card-final.js")
-            _LOGGER.info("Frontend resources registered via fallback method")
-        except Exception as fallback_error:
-            _LOGGER.error("Fallback registration also failed: %s", fallback_error)
+        _LOGGER.warning("Frontend resource registration not available: %s", e)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -233,11 +212,69 @@ class EntityManager:
             "recorder_days": DEFAULT_RECORDER_DAYS
         })
     
-    async def update_entity_state(self, entity_id: str, enabled: bool):
-        """Update entity enabled state."""
-        entity_registry = await async_get_entity_registry(self.hass)
+    def _sanitize_for_json(self, obj: Any) -> Any:
+        """Sanitize object for JSON serialization."""
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        elif isinstance(obj, dict):
+            return {key: self._sanitize_for_json(value) for key, value in obj.items()}
+        elif isinstance(obj, list):
+            return [self._sanitize_for_json(item) for item in obj]
+        elif isinstance(obj, tuple):
+            return [self._sanitize_for_json(item) for item in obj]
+        elif hasattr(obj, '__dict__'):
+            # Para objetos complexos, converter para string
+            return str(obj)
+        else:
+            # Para tipos básicos (str, int, float, bool, None)
+            return obj
+    
+    def _get_safe_attributes(self, state) -> Dict[str, Any]:
+        """Get entity attributes in a JSON-safe format."""
+        if not state or not state.attributes:
+            return {}
         
         try:
+            # Lista de atributos importantes que queremos manter
+            important_attrs = [
+                'friendly_name', 'unit_of_measurement', 'device_class',
+                'icon', 'entity_picture', 'supported_features', 'platform'
+            ]
+            
+            safe_attrs = {}
+            
+            # Primeiro, adicionar atributos importantes
+            for attr in important_attrs:
+                if attr in state.attributes:
+                    value = state.attributes[attr]
+                    safe_attrs[attr] = self._sanitize_for_json(value)
+            
+            # Adicionar alguns outros atributos seguros (máximo 15 total)
+            for key, value in state.attributes.items():
+                if key not in safe_attrs and len(safe_attrs) < 15:
+                    try:
+                        # Tentar serializar o valor
+                        json.dumps(value)
+                        safe_attrs[key] = value
+                    except (TypeError, ValueError):
+                        # Se não conseguir serializar, converter para string
+                        try:
+                            safe_attrs[key] = str(value)
+                        except Exception:
+                            # Se ainda assim falhar, pular
+                            continue
+            
+            return safe_attrs
+            
+        except Exception as e:
+            _LOGGER.warning("Error processing attributes for entity: %s", e)
+            return {"error": "Could not process attributes"}
+    
+    async def update_entity_state(self, entity_id: str, enabled: bool):
+        """Update entity enabled state."""
+        try:
+            entity_registry = async_get_entity_registry(self.hass)
+            
             entity_registry.async_update_entity(
                 entity_id,
                 disabled_by=None if enabled else "user"
@@ -288,7 +325,7 @@ class EntityManager:
                          recorder_days: Optional[int] = None):
         """Bulk update entities."""
         try:
-            entity_registry = await async_get_entity_registry(self.hass)
+            entity_registry = async_get_entity_registry(self.hass)
             
             for entity_id in entity_ids:
                 # Update entity state if provided
@@ -365,31 +402,101 @@ class EntityManager:
             raise HomeAssistantError(f"Error purging recorder: {e}")
     
     async def get_all_entities(self) -> List[Dict[str, Any]]:
-        """Get all entities with their configurations."""
-        entity_registry = await async_get_entity_registry(self.hass)
-        entities = []
-        
-        for entity in entity_registry.entities.values():
-            config = self.get_entity_config(entity.entity_id)
-            state = self.hass.states.get(entity.entity_id)
+        """Get all entities with their configurations - JSON-safe version."""
+        try:
+            _LOGGER.info("Getting all entities using JSON-safe method")
+            entities = []
             
-            # Determinar o estado real
-            if state is None:
-                entity_state = "not_provided"
-            elif state.state == "unavailable":
-                entity_state = "unavailable"
-            else:
-                entity_state = state.state
+            # Usar hass.states ao invés do EntityRegistry problemático
+            all_states = self.hass.states.async_all()
             
-            entities.append({
-                "entity_id": entity.entity_id,
-                "name": entity.name or entity.entity_id,
-                "domain": entity.domain,
-                "platform": entity.platform,
-                "enabled": not bool(entity.disabled_by),
-                "state": entity_state,
-                "attributes": dict(state.attributes) if state else {},
-                "recorder_days": config.get("recorder_days", DEFAULT_RECORDER_DAYS),
-            })
-        
-        return sorted(entities, key=lambda x: x["entity_id"])
+            _LOGGER.info("Found %d states in Home Assistant", len(all_states))
+            
+            processed_count = 0
+            error_count = 0
+            json_error_count = 0
+            
+            for state in all_states:
+                try:
+                    processed_count += 1
+                    entity_id = state.entity_id
+                    
+                    # Obter configuração da entidade
+                    config = self.get_entity_config(entity_id)
+                    
+                    # Extrair domínio do entity_id
+                    domain = entity_id.split('.')[0]
+                    
+                    # Determinar se está habilitado
+                    is_enabled = config.get("enabled", True)
+                    
+                    # Nome da entidade
+                    entity_name = state.attributes.get('friendly_name')
+                    if not entity_name:
+                        entity_name = entity_id.split('.')[-1].replace('_', ' ').title()
+                    
+                    # Determinar o estado
+                    if state.state == "unavailable":
+                        entity_state = "unavailable"
+                    elif state.state == "unknown":
+                        entity_state = "unknown"
+                    else:
+                        entity_state = state.state
+                    
+                    # Obter atributos de forma segura (JSON-safe)
+                    safe_attributes = self._get_safe_attributes(state)
+                    
+                    # Construir dados da entidade
+                    entity_data = {
+                        "entity_id": entity_id,
+                        "name": entity_name,
+                        "domain": domain,
+                        "platform": safe_attributes.get('platform', 'unknown'),
+                        "enabled": is_enabled,
+                        "state": entity_state,
+                        "attributes": safe_attributes,
+                        "recorder_days": config.get("recorder_days", DEFAULT_RECORDER_DAYS),
+                    }
+                    
+                    # Verificar se os dados são JSON-serializáveis
+                    try:
+                        json.dumps(entity_data)
+                        entities.append(entity_data)
+                    except (TypeError, ValueError) as json_error:
+                        json_error_count += 1
+                        _LOGGER.warning("Entity %s has non-JSON-serializable data, using simplified version: %s", 
+                                      entity_id, json_error)
+                        # Criar versão simplificada sem atributos
+                        simplified_data = {
+                            "entity_id": entity_id,
+                            "name": entity_name,
+                            "domain": domain,
+                            "platform": "unknown",
+                            "enabled": is_enabled,
+                            "state": entity_state,
+                            "attributes": {},
+                            "recorder_days": config.get("recorder_days", DEFAULT_RECORDER_DAYS),
+                        }
+                        entities.append(simplified_data)
+                    
+                    # Log de progresso para muitas entidades
+                    if processed_count % 500 == 0:
+                        _LOGGER.debug("Processed %d/%d entities", processed_count, len(all_states))
+                    
+                except Exception as entity_error:
+                    error_count += 1
+                    _LOGGER.warning("Error processing state %s: %s", 
+                                  getattr(state, 'entity_id', 'unknown'), entity_error)
+                    continue
+            
+            # Ordenar por entity_id
+            entities_sorted = sorted(entities, key=lambda x: x["entity_id"])
+            
+            _LOGGER.info("Successfully processed %d entities using JSON-safe method (%d errors, %d JSON errors)", 
+                        len(entities_sorted), error_count, json_error_count)
+            
+            return entities_sorted
+            
+        except Exception as e:
+            _LOGGER.error("Error in get_all_entities: %s", e, exc_info=True)
+            return []
