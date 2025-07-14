@@ -15,9 +15,53 @@ _LOGGER = logging.getLogger(__name__)
 
 def setup_api(hass: HomeAssistant) -> None:
     """Set up the API views."""
-    hass.http.register_view(EntityManagerConfigView)
-    hass.http.register_view(EntityManagerEntitiesView)
-    hass.http.register_view(EntityManagerPanelView)
+    _LOGGER.info("Setting up Entity Manager API views")
+    
+    try:
+        hass.http.register_view(EntityManagerConfigView)
+        hass.http.register_view(EntityManagerEntitiesView)
+        hass.http.register_view(EntityManagerPanelView)
+        hass.http.register_view(EntityManagerStatusView)
+        
+        _LOGGER.info("Entity Manager API views registered successfully")
+        
+    except Exception as e:
+        _LOGGER.error("Failed to register Entity Manager API views: %s", e, exc_info=True)
+
+
+class EntityManagerStatusView(HomeAssistantView):
+    """View to check if Entity Manager is running."""
+    
+    url = "/api/entity_manager/status"
+    name = "api:entity_manager:status"
+    requires_auth = True
+    
+    async def get(self, request: web.Request) -> web.Response:
+        """Get Entity Manager status."""
+        hass = request.app["hass"]
+        manager = hass.data.get(DOMAIN)
+        
+        if not manager:
+            _LOGGER.error("Entity Manager not found in hass.data")
+            return web.Response(
+                text=json.dumps({
+                    "status": "error",
+                    "message": "Entity Manager not initialized",
+                    "integration_loaded": False
+                }),
+                status=500,
+                content_type="application/json"
+            )
+        
+        return web.Response(
+            text=json.dumps({
+                "status": "ok",
+                "message": "Entity Manager is running",
+                "integration_loaded": True,
+                "version": "1.1.0"
+            }),
+            content_type="application/json"
+        )
 
 
 class EntityManagerConfigView(HomeAssistantView):
@@ -33,6 +77,7 @@ class EntityManagerConfigView(HomeAssistantView):
         manager = hass.data.get(DOMAIN)
         
         if not manager:
+            _LOGGER.error("Entity Manager not found in hass.data for config request")
             return web.Response(
                 text=json.dumps({"error": "Entity Manager not initialized"}),
                 status=500,
@@ -40,12 +85,13 @@ class EntityManagerConfigView(HomeAssistantView):
             )
         
         try:
+            _LOGGER.debug("Returning Entity Manager configuration")
             return web.Response(
                 text=json.dumps(manager._config),
                 content_type="application/json"
             )
         except Exception as e:
-            _LOGGER.error("Error getting config: %s", e)
+            _LOGGER.error("Error getting config: %s", e, exc_info=True)
             return web.Response(
                 text=json.dumps({"error": str(e)}),
                 status=500,
@@ -58,6 +104,7 @@ class EntityManagerConfigView(HomeAssistantView):
         manager = hass.data.get(DOMAIN)
         
         if not manager:
+            _LOGGER.error("Entity Manager not found in hass.data for config update")
             return web.Response(
                 text=json.dumps({"error": "Entity Manager not initialized"}),
                 status=500,
@@ -69,12 +116,13 @@ class EntityManagerConfigView(HomeAssistantView):
             manager._config.update(data)
             await manager.save_config()
             
+            _LOGGER.info("Entity Manager configuration updated successfully")
             return web.Response(
                 text=json.dumps({"success": True}),
                 content_type="application/json"
             )
         except Exception as e:
-            _LOGGER.error("Error updating config: %s", e)
+            _LOGGER.error("Error updating config: %s", e, exc_info=True)
             return web.Response(
                 text=json.dumps({"error": str(e)}),
                 status=500,
@@ -95,15 +143,18 @@ class EntityManagerEntitiesView(HomeAssistantView):
         manager = hass.data.get(DOMAIN)
         
         if not manager:
-            _LOGGER.error("Entity Manager not initialized")
+            _LOGGER.error("Entity Manager not found in hass.data for entities request")
             return web.Response(
-                text=json.dumps({"error": "Entity Manager not initialized"}),
+                text=json.dumps({
+                    "error": "Entity Manager not initialized",
+                    "details": "Integration may not be installed or loaded properly"
+                }),
                 status=500,
                 content_type="application/json"
             )
         
         try:
-            _LOGGER.debug("API: Getting all entities")
+            _LOGGER.debug("API: Getting all entities from manager")
             
             # Chamar a função do manager que já tem o tratamento correto
             entities = await manager.get_all_entities()
@@ -120,7 +171,10 @@ class EntityManagerEntitiesView(HomeAssistantView):
             except (TypeError, ValueError) as json_error:
                 _LOGGER.error("API: JSON serialization error: %s", json_error)
                 return web.Response(
-                    text=json.dumps({"error": f"JSON serialization error: {str(json_error)}"}),
+                    text=json.dumps({
+                        "error": f"JSON serialization error: {str(json_error)}",
+                        "entity_count": len(entities)
+                    }),
                     status=500,
                     content_type="application/json"
                 )
@@ -128,7 +182,10 @@ class EntityManagerEntitiesView(HomeAssistantView):
         except Exception as e:
             _LOGGER.error("API: Error getting entities: %s", e, exc_info=True)
             return web.Response(
-                text=json.dumps({"error": f"Error getting entities: {str(e)}"}),
+                text=json.dumps({
+                    "error": f"Error getting entities: {str(e)}",
+                    "integration_status": "loaded" if manager else "not_loaded"
+                }),
                 status=500,
                 content_type="application/json"
             )
@@ -145,28 +202,60 @@ class EntityManagerPanelView(HomeAssistantView):
         """Serve the Entity Manager panel."""
         hass = request.app["hass"]
         
+        # Verificar se a integração está carregada
+        manager = hass.data.get(DOMAIN)
+        if not manager:
+            _LOGGER.warning("Entity Manager not loaded, but serving panel anyway")
+        
         # Ler o arquivo HTML do painel
-        panel_path = hass.config.path("custom_components", DOMAIN, "panel-v2.html")
+        panel_path = hass.config.path("custom_components", DOMAIN, "panel-v3.html")
         
         try:
             with open(panel_path, 'r', encoding='utf-8') as f:
                 html_content = f.read()
             
+            _LOGGER.debug("Successfully served Entity Manager panel")
             return web.Response(
                 text=html_content,
                 content_type="text/html"
             )
         except FileNotFoundError:
-            _LOGGER.warning("Panel HTML file not found: %s", panel_path)
+            _LOGGER.error("Panel HTML file not found: %s", panel_path)
+            error_html = f"""
+            <html>
+            <head><title>Entity Manager - Erro</title></head>
+            <body>
+                <h1>Entity Manager - Arquivo do Painel Não Encontrado</h1>
+                <p>O arquivo do painel não foi encontrado em: <code>{panel_path}</code></p>
+                <p>Verifique se a integração foi instalada corretamente.</p>
+                <h2>Troubleshooting:</h2>
+                <ul>
+                    <li>Verifique se todos os arquivos estão na pasta <code>custom_components/entity_manager/</code></li>
+                    <li>Reinicie o Home Assistant</li>
+                    <li>Verifique os logs para mais detalhes</li>
+                </ul>
+            </body>
+            </html>
+            """
             return web.Response(
-                text="<h1>Entity Manager Panel not found</h1><p>Panel file is missing. Please check the installation.</p>",
+                text=error_html,
                 status=404,
                 content_type="text/html"
             )
         except Exception as e:
-            _LOGGER.error("Error serving panel: %s", e)
+            _LOGGER.error("Error serving panel: %s", e, exc_info=True)
+            error_html = f"""
+            <html>
+            <head><title>Entity Manager - Erro</title></head>
+            <body>
+                <h1>Entity Manager - Erro ao Carregar Painel</h1>
+                <p>Erro: {str(e)}</p>
+                <p>Verifique os logs do Home Assistant para mais detalhes.</p>
+            </body>
+            </html>
+            """
             return web.Response(
-                text=f"<h1>Error loading panel: {e}</h1>",
+                text=error_html,
                 status=500,
                 content_type="text/html"
             )

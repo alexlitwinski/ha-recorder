@@ -16,6 +16,8 @@ SERVICE_UPDATE_RECORDER_DAYS = "update_recorder_days"
 SERVICE_BULK_UPDATE = "bulk_update"
 SERVICE_PURGE_RECORDER = "purge_recorder"
 SERVICE_RELOAD_CONFIG = "reload_config"
+SERVICE_DELETE_ENTITY = "delete_entity"
+SERVICE_BULK_DELETE = "bulk_delete"
 
 # Attributes
 ATTR_ENTITY_ID = "entity_id"

@@ -24,6 +24,8 @@ from .const import (
     SERVICE_BULK_UPDATE,
     SERVICE_PURGE_RECORDER,
     SERVICE_RELOAD_CONFIG,
+    SERVICE_DELETE_ENTITY,
+    SERVICE_BULK_DELETE,
     ATTR_ENTITY_ID,
     ATTR_ENTITY_IDS,
     ATTR_ENABLED,
@@ -55,6 +57,14 @@ BULK_UPDATE_SCHEMA = vol.Schema({
 PURGE_RECORDER_SCHEMA = vol.Schema({
     vol.Optional(ATTR_ENTITY_IDS): cv.entity_ids,
     vol.Optional(ATTR_FORCE_PURGE, default=False): bool,
+})
+
+DELETE_ENTITY_SCHEMA = vol.Schema({
+    vol.Required(ATTR_ENTITY_ID): cv.entity_id,
+})
+
+BULK_DELETE_SCHEMA = vol.Schema({
+    vol.Required(ATTR_ENTITY_IDS): cv.entity_ids,
 })
 
 
@@ -133,6 +143,16 @@ async def _register_services(hass: HomeAssistant, manager: "EntityManager"):
         force_purge = call.data[ATTR_FORCE_PURGE]
         await manager.purge_recorder(entity_ids, force_purge)
     
+    async def delete_entity(call: ServiceCall):
+        """Delete entity."""
+        entity_id = call.data[ATTR_ENTITY_ID]
+        await manager.delete_entity(entity_id)
+    
+    async def bulk_delete(call: ServiceCall):
+        """Bulk delete entities."""
+        entity_ids = call.data[ATTR_ENTITY_IDS]
+        await manager.bulk_delete(entity_ids)
+    
     async def reload_config(call: ServiceCall):
         """Reload configuration."""
         await manager.load_config()
@@ -164,6 +184,20 @@ async def _register_services(hass: HomeAssistant, manager: "EntityManager"):
         SERVICE_PURGE_RECORDER,
         purge_recorder,
         schema=PURGE_RECORDER_SCHEMA,
+    )
+    
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_DELETE_ENTITY,
+        delete_entity,
+        schema=DELETE_ENTITY_SCHEMA,
+    )
+    
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_BULK_DELETE,
+        bulk_delete,
+        schema=BULK_DELETE_SCHEMA,
     )
     
     hass.services.async_register(
@@ -361,6 +395,80 @@ class EntityManager:
             _LOGGER.error("Error in bulk update: %s", e)
             raise HomeAssistantError(f"Error in bulk update: {e}")
     
+    async def delete_entity(self, entity_id: str):
+        """Delete entity from Home Assistant."""
+        try:
+            entity_registry = async_get_entity_registry(self.hass)
+            
+            # Verificar se a entidade existe
+            entity_entry = entity_registry.async_get(entity_id)
+            if not entity_entry:
+                raise HomeAssistantError(f"Entity {entity_id} not found")
+            
+            # Remover a entidade do registry
+            entity_registry.async_remove(entity_id)
+            
+            # Remover da configuração local
+            if entity_id in self._config:
+                del self._config[entity_id]
+                await self.save_config()
+            
+            # Fire event
+            self.hass.bus.async_fire(EVENT_ENTITY_MANAGER_UPDATED, {
+                "entity_id": entity_id,
+                "deleted": True
+            })
+            
+            _LOGGER.info("Deleted entity %s", entity_id)
+            
+        except Exception as e:
+            _LOGGER.error("Error deleting entity %s: %s", entity_id, e)
+            raise HomeAssistantError(f"Error deleting entity: {e}")
+    
+    async def bulk_delete(self, entity_ids: List[str]):
+        """Bulk delete entities."""
+        try:
+            entity_registry = async_get_entity_registry(self.hass)
+            deleted_entities = []
+            
+            for entity_id in entity_ids:
+                try:
+                    # Verificar se a entidade existe
+                    entity_entry = entity_registry.async_get(entity_id)
+                    if entity_entry:
+                        # Remover a entidade do registry
+                        entity_registry.async_remove(entity_id)
+                        deleted_entities.append(entity_id)
+                        
+                        # Remover da configuração local
+                        if entity_id in self._config:
+                            del self._config[entity_id]
+                            
+                    else:
+                        _LOGGER.warning("Entity %s not found, skipping deletion", entity_id)
+                        
+                except Exception as e:
+                    _LOGGER.error("Error deleting entity %s: %s", entity_id, e)
+                    continue
+            
+            if deleted_entities:
+                await self.save_config()
+                
+                # Fire event
+                self.hass.bus.async_fire(EVENT_ENTITY_MANAGER_UPDATED, {
+                    "entity_ids": deleted_entities,
+                    "bulk_delete": True
+                })
+            
+            _LOGGER.info("Bulk deleted %d entities", len(deleted_entities))
+            
+            if len(deleted_entities) != len(entity_ids):
+                raise HomeAssistantError(f"Only {len(deleted_entities)} of {len(entity_ids)} entities were deleted")
+            
+        except Exception as e:
+            _LOGGER.error("Error in bulk delete: %s", e)
+            raise HomeAssistantError(f"Error in bulk delete: {e}")
+    
     async def purge_recorder(self, entity_ids: Optional[List[str]] = None, force_purge: bool = False):
         """Purge recorder data based on entity configurations."""
         try:
@@ -407,6 +515,10 @@ class EntityManager:
             _LOGGER.info("Getting all entities using JSON-safe method")
             entities = []
             
+            # Obter registries
+            entity_registry = async_get_entity_registry(self.hass)
+            device_registry = async_get_device_registry(self.hass)
+            
             # Usar hass.states ao invés do EntityRegistry problemático
             all_states = self.hass.states.async_all()
             
@@ -443,6 +555,24 @@ class EntityManager:
                     else:
                         entity_state = state.state
                     
+                    # Obter informações do dispositivo
+                    device_id = None
+                    device_name = "Sem Dispositivo"
+                    device_manufacturer = ""
+                    device_model = ""
+                    
+                    try:
+                        entity_entry = entity_registry.async_get(entity_id)
+                        if entity_entry and entity_entry.device_id:
+                            device_id = entity_entry.device_id
+                            device_entry = device_registry.async_get(device_id)
+                            if device_entry:
+                                device_name = device_entry.name or device_entry.model or "Dispositivo Desconhecido"
+                                device_manufacturer = device_entry.manufacturer or ""
+                                device_model = device_entry.model or ""
+                    except Exception as device_error:
+                        _LOGGER.debug("Could not get device info for %s: %s", entity_id, device_error)
+                    
                     # Obter atributos de forma segura (JSON-safe)
                     safe_attributes = self._get_safe_attributes(state)
                     
@@ -456,6 +586,10 @@ class EntityManager:
                         "state": entity_state,
                         "attributes": safe_attributes,
                         "recorder_days": config.get("recorder_days", DEFAULT_RECORDER_DAYS),
+                        "device_id": device_id,
+                        "device_name": device_name,
+                        "device_manufacturer": device_manufacturer,
+                        "device_model": device_model,
                     }
                     
                     # Verificar se os dados são JSON-serializáveis

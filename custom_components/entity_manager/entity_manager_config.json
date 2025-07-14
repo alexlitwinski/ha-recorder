@@ -1,0 +1,10 @@
+{
+  "light.abajur_escritorio_hanna": {
+    "recorder_days": 10,
+    "enabled": true
+  },
+  "switch.adguard_home_controle_dos_pais": {
+    "recorder_days": 10,
+    "enabled": true
+  }
+}
