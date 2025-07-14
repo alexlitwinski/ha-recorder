@@ -1,6 +1,6 @@
 """Sensor platform for Entity Manager."""
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
@@ -36,7 +36,7 @@ class EntityManagerSensor(SensorEntity):
         self._attr_name = "Entity Manager Stats"
         self._attr_unique_id = f"{DOMAIN}_stats"
         self._attr_icon = "mdi:view-grid"
-        self._attributes = {}
+        self._attributes: Dict[str, Any] = {}
         
     @property
     def state(self) -> int:
@@ -50,48 +50,45 @@ class EntityManagerSensor(SensorEntity):
     
     async def async_update(self) -> None:
         """Update the sensor."""
-        # Força reload da configuração se necessário
         await self._manager.load_config()
         
-        # Atualizar atributos
-        entity_registry = await async_get_entity_registry(self.hass)
+        # AQUI ESTÁ A CORREÇÃO: remoção do 'await'
+        entity_registry = async_get_entity_registry(self.hass)
         
         total_entities = len(entity_registry.entities)
         managed_entities = len(self._manager._config)
-        enabled_entities = len([e for e in entity_registry.entities.values() if not e.disabled_by])
-        disabled_entities = total_entities - enabled_entities
         
-        # Contar entidades por domínio
-        domains = {}
+        enabled_entities_count = 0
+        domains: Dict[str, int] = {}
+        states: Dict[str, int] = {}
+
         for entity in entity_registry.entities.values():
+            if not entity.disabled_by:
+                enabled_entities_count += 1
+            
             domain = entity.entity_id.split('.')[0]
             domains[domain] = domains.get(domain, 0) + 1
-        
-        # Estados das entidades
-        states = {}
-        for entity in entity_registry.entities.values():
+
             state_obj = self.hass.states.get(entity.entity_id)
-            if state_obj is None:
-                state = "not_provided"
-            elif state_obj.state == "unavailable":
-                state = "unavailable"
-            else:
-                state = state_obj.state
+            state_val = "not_provided"
+            if state_obj:
+                state_val = state_obj.state
             
-            states[state] = states.get(state, 0) + 1
+            states[state_val] = states.get(state_val, 0) + 1
+            
+        disabled_entities_count = total_entities - enabled_entities_count
         
-        # Configurações de recorder por dias
-        recorder_config = {}
-        for entity_id, config in self._manager._config.items():
-            days = config.get('recorder_days', 10)
+        recorder_config: Dict[str, int] = {}
+        for config in self._manager._config.values():
+            days = config.get('recorder_days', DEFAULT_RECORDER_DAYS)
             key = f"entities_with_{days}_days"
             recorder_config[key] = recorder_config.get(key, 0) + 1
         
         self._attributes = {
             "total_entities": total_entities,
             "managed_entities": managed_entities,
-            "enabled_entities": enabled_entities,
-            "disabled_entities": disabled_entities,
+            "enabled_entities": enabled_entities_count,
+            "disabled_entities": disabled_entities_count,
             "domains": domains,
             "states": states,
             "recorder_config": recorder_config,

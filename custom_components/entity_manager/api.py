@@ -208,7 +208,7 @@ class EntityManagerPanelView(HomeAssistantView):
             _LOGGER.warning("Entity Manager not loaded, but serving panel anyway")
         
         # Ler o arquivo HTML do painel
-        panel_path = hass.config.path("custom_components", DOMAIN, "panel-v3.html")
+        panel_path = hass.config.path("custom_components", DOMAIN, "panel-v5.html")
         
         try:
             with open(panel_path, 'r', encoding='utf-8') as f:

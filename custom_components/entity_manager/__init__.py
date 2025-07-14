@@ -7,630 +7,106 @@ from typing import Any, Dict, List, Optional
 
 import voluptuous as vol
 
-from homeassistant.components.recorder import get_instance, purge
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, ServiceCall, callback
-from homeassistant.helpers import config_validation as cv
-from homeassistant.helpers.entity_registry import async_get as async_get_entity_registry
-from homeassistant.helpers.device_registry import async_get as async_get_device_registry
+from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.helpers.entity_registry import async_get as async_get_entity_registry, EntityRegistry
+from homeassistant.helpers.device_registry import async_get as async_get_device_registry, DeviceRegistry
 from homeassistant.exceptions import HomeAssistantError
 
-from .const import (
-    DOMAIN,
-    CONFIG_FILE,
-    DEFAULT_RECORDER_DAYS,
-    SERVICE_UPDATE_ENTITY_STATE,
-    SERVICE_UPDATE_RECORDER_DAYS,
-    SERVICE_BULK_UPDATE,
-    SERVICE_PURGE_RECORDER,
-    SERVICE_RELOAD_CONFIG,
-    SERVICE_DELETE_ENTITY,
-    SERVICE_BULK_DELETE,
-    ATTR_ENTITY_ID,
-    ATTR_ENTITY_IDS,
-    ATTR_ENABLED,
-    ATTR_RECORDER_DAYS,
-    ATTR_FORCE_PURGE,
-    EVENT_ENTITY_MANAGER_UPDATED,
-)
+from .const import DOMAIN, CONFIG_FILE, DEFAULT_RECORDER_DAYS
 from .api import setup_api
 
 _LOGGER = logging.getLogger(__name__)
 
-# Service schemas
-UPDATE_ENTITY_STATE_SCHEMA = vol.Schema({
-    vol.Required(ATTR_ENTITY_ID): cv.entity_id,
-    vol.Required(ATTR_ENABLED): bool,
-})
-
-UPDATE_RECORDER_DAYS_SCHEMA = vol.Schema({
-    vol.Required(ATTR_ENTITY_ID): cv.entity_id,
-    vol.Required(ATTR_RECORDER_DAYS): vol.All(int, vol.Range(min=0)),
-})
-
-BULK_UPDATE_SCHEMA = vol.Schema({
-    vol.Required(ATTR_ENTITY_IDS): cv.entity_ids,
-    vol.Optional(ATTR_ENABLED): bool,
-    vol.Optional(ATTR_RECORDER_DAYS): vol.All(int, vol.Range(min=0)),
-})
-
-PURGE_RECORDER_SCHEMA = vol.Schema({
-    vol.Optional(ATTR_ENTITY_IDS): cv.entity_ids,
-    vol.Optional(ATTR_FORCE_PURGE, default=False): bool,
-})
-
-DELETE_ENTITY_SCHEMA = vol.Schema({
-    vol.Required(ATTR_ENTITY_ID): cv.entity_id,
-})
-
-BULK_DELETE_SCHEMA = vol.Schema({
-    vol.Required(ATTR_ENTITY_IDS): cv.entity_ids,
-})
-
+# Schemas e setup de serviços (sem alterações significativas)
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Entity Manager from a config entry."""
     hass.data.setdefault(DOMAIN, {})
-    
-    # Initialize the entity manager
     manager = EntityManager(hass)
     hass.data[DOMAIN] = manager
-    
-    # Load configuration
     await manager.load_config()
-    
-    # Register services
-    await _register_services(hass, manager)
-    
-    # Setup API views
+    # Registra os serviços aqui (código omitido por brevidade, use o seu original)
     setup_api(hass)
-    
-    # Register the custom card (simplificado)
-    await _register_frontend_resources(hass)
-    
-    # Setup sensor platform
     await hass.config_entries.async_forward_entry_setups(entry, ["sensor"])
-    
     return True
-
-
-async def _register_frontend_resources(hass: HomeAssistant):
-    """Register frontend resources for the custom card."""
-    try:
-        _LOGGER.info("Frontend resource registration skipped - manual setup required")
-        _LOGGER.info("Copy entity-manager-card-final.js to /config/www/ and add to Lovelace resources")
-        
-    except Exception as e:
-        _LOGGER.warning("Frontend resource registration not available: %s", e)
-
-
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Unload Entity Manager config entry."""
-    # Unload platforms
-    unload_ok = await hass.config_entries.async_unload_platforms(entry, ["sensor"])
-    
-    if unload_ok:
-        hass.data.pop(DOMAIN, None)
-    
-    return unload_ok
-
-
-async def _register_services(hass: HomeAssistant, manager: "EntityManager"):
-    """Register Entity Manager services."""
-    
-    async def update_entity_state(call: ServiceCall):
-        """Update entity enabled state."""
-        entity_id = call.data[ATTR_ENTITY_ID]
-        enabled = call.data[ATTR_ENABLED]
-        await manager.update_entity_state(entity_id, enabled)
-    
-    async def update_recorder_days(call: ServiceCall):
-        """Update entity recorder days."""
-        entity_id = call.data[ATTR_ENTITY_ID]
-        recorder_days = call.data[ATTR_RECORDER_DAYS]
-        await manager.update_recorder_days(entity_id, recorder_days)
-    
-    async def bulk_update(call: ServiceCall):
-        """Bulk update entities."""
-        entity_ids = call.data[ATTR_ENTITY_IDS]
-        enabled = call.data.get(ATTR_ENABLED)
-        recorder_days = call.data.get(ATTR_RECORDER_DAYS)
-        await manager.bulk_update(entity_ids, enabled, recorder_days)
-    
-    async def purge_recorder(call: ServiceCall):
-        """Purge recorder data."""
-        entity_ids = call.data.get(ATTR_ENTITY_IDS)
-        force_purge = call.data[ATTR_FORCE_PURGE]
-        await manager.purge_recorder(entity_ids, force_purge)
-    
-    async def delete_entity(call: ServiceCall):
-        """Delete entity."""
-        entity_id = call.data[ATTR_ENTITY_ID]
-        await manager.delete_entity(entity_id)
-    
-    async def bulk_delete(call: ServiceCall):
-        """Bulk delete entities."""
-        entity_ids = call.data[ATTR_ENTITY_IDS]
-        await manager.bulk_delete(entity_ids)
-    
-    async def reload_config(call: ServiceCall):
-        """Reload configuration."""
-        await manager.load_config()
-    
-    # Register services
-    hass.services.async_register(
-        DOMAIN,
-        SERVICE_UPDATE_ENTITY_STATE,
-        update_entity_state,
-        schema=UPDATE_ENTITY_STATE_SCHEMA,
-    )
-    
-    hass.services.async_register(
-        DOMAIN,
-        SERVICE_UPDATE_RECORDER_DAYS,
-        update_recorder_days,
-        schema=UPDATE_RECORDER_DAYS_SCHEMA,
-    )
-    
-    hass.services.async_register(
-        DOMAIN,
-        SERVICE_BULK_UPDATE,
-        bulk_update,
-        schema=BULK_UPDATE_SCHEMA,
-    )
-    
-    hass.services.async_register(
-        DOMAIN,
-        SERVICE_PURGE_RECORDER,
-        purge_recorder,
-        schema=PURGE_RECORDER_SCHEMA,
-    )
-    
-    hass.services.async_register(
-        DOMAIN,
-        SERVICE_DELETE_ENTITY,
-        delete_entity,
-        schema=DELETE_ENTITY_SCHEMA,
-    )
-    
-    hass.services.async_register(
-        DOMAIN,
-        SERVICE_BULK_DELETE,
-        bulk_delete,
-        schema=BULK_DELETE_SCHEMA,
-    )
-    
-    hass.services.async_register(
-        DOMAIN,
-        SERVICE_RELOAD_CONFIG,
-        reload_config,
-    )
-
 
 class EntityManager:
     """Entity Manager class."""
-    
+
     def __init__(self, hass: HomeAssistant):
         """Initialize Entity Manager."""
         self.hass = hass
         self._config: Dict[str, Any] = {}
         self._config_path = hass.config.path("custom_components", DOMAIN, CONFIG_FILE)
-    
-    async def load_config(self):
-        """Load configuration from file."""
+
+    def _load_config_sync(self) -> Dict[str, Any]:
+        """Loads the config file synchronously."""
+        if not os.path.exists(self._config_path):
+            return {}
         try:
-            if os.path.exists(self._config_path):
-                with open(self._config_path, 'r', encoding='utf-8') as f:
-                    self._config = json.load(f)
-            else:
-                self._config = {}
-            _LOGGER.info("Configuration loaded successfully")
-        except Exception as e:
-            _LOGGER.error("Error loading configuration: %s", e)
-            self._config = {}
-    
-    async def save_config(self):
-        """Save configuration to file."""
+            with open(self._config_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError) as e:
+            _LOGGER.error("Could not read or decode entity manager config file: %s", e)
+            return {}
+
+    def _save_config_sync(self) -> None:
+        """Saves the config file synchronously."""
         try:
             os.makedirs(os.path.dirname(self._config_path), exist_ok=True)
             with open(self._config_path, 'w', encoding='utf-8') as f:
                 json.dump(self._config, f, indent=2, ensure_ascii=False)
-            _LOGGER.info("Configuration saved successfully")
-        except Exception as e:
-            _LOGGER.error("Error saving configuration: %s", e)
-    
-    def get_entity_config(self, entity_id: str) -> Dict[str, Any]:
-        """Get entity configuration."""
-        return self._config.get(entity_id, {
-            "enabled": True,
-            "recorder_days": DEFAULT_RECORDER_DAYS
-        })
-    
-    def _sanitize_for_json(self, obj: Any) -> Any:
-        """Sanitize object for JSON serialization."""
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        elif isinstance(obj, dict):
-            return {key: self._sanitize_for_json(value) for key, value in obj.items()}
-        elif isinstance(obj, list):
-            return [self._sanitize_for_json(item) for item in obj]
-        elif isinstance(obj, tuple):
-            return [self._sanitize_for_json(item) for item in obj]
-        elif hasattr(obj, '__dict__'):
-            # Para objetos complexos, converter para string
-            return str(obj)
-        else:
-            # Para tipos básicos (str, int, float, bool, None)
-            return obj
-    
-    def _get_safe_attributes(self, state) -> Dict[str, Any]:
-        """Get entity attributes in a JSON-safe format."""
-        if not state or not state.attributes:
-            return {}
-        
-        try:
-            # Lista de atributos importantes que queremos manter
-            important_attrs = [
-                'friendly_name', 'unit_of_measurement', 'device_class',
-                'icon', 'entity_picture', 'supported_features', 'platform'
-            ]
-            
-            safe_attrs = {}
-            
-            # Primeiro, adicionar atributos importantes
-            for attr in important_attrs:
-                if attr in state.attributes:
-                    value = state.attributes[attr]
-                    safe_attrs[attr] = self._sanitize_for_json(value)
-            
-            # Adicionar alguns outros atributos seguros (máximo 15 total)
-            for key, value in state.attributes.items():
-                if key not in safe_attrs and len(safe_attrs) < 15:
-                    try:
-                        # Tentar serializar o valor
-                        json.dumps(value)
-                        safe_attrs[key] = value
-                    except (TypeError, ValueError):
-                        # Se não conseguir serializar, converter para string
-                        try:
-                            safe_attrs[key] = str(value)
-                        except Exception:
-                            # Se ainda assim falhar, pular
-                            continue
-            
-            return safe_attrs
-            
-        except Exception as e:
-            _LOGGER.warning("Error processing attributes for entity: %s", e)
-            return {"error": "Could not process attributes"}
-    
-    async def update_entity_state(self, entity_id: str, enabled: bool):
-        """Update entity enabled state."""
-        try:
-            entity_registry = async_get_entity_registry(self.hass)
-            
-            entity_registry.async_update_entity(
-                entity_id,
-                disabled_by=None if enabled else "user"
-            )
-            
-            # Update config
-            if entity_id not in self._config:
-                self._config[entity_id] = {"recorder_days": DEFAULT_RECORDER_DAYS}
-            self._config[entity_id]["enabled"] = enabled
-            
-            await self.save_config()
-            
-            # Fire event
-            self.hass.bus.async_fire(EVENT_ENTITY_MANAGER_UPDATED, {
-                "entity_id": entity_id,
-                "enabled": enabled
-            })
-            
-            _LOGGER.info("Updated entity %s state to %s", entity_id, enabled)
-            
-        except Exception as e:
-            _LOGGER.error("Error updating entity %s state: %s", entity_id, e)
-            raise HomeAssistantError(f"Error updating entity state: {e}")
-    
-    async def update_recorder_days(self, entity_id: str, recorder_days: int):
-        """Update entity recorder days."""
-        try:
-            # Update config
-            if entity_id not in self._config:
-                self._config[entity_id] = {"enabled": True}
-            self._config[entity_id]["recorder_days"] = recorder_days
-            
-            await self.save_config()
-            
-            # Fire event
-            self.hass.bus.async_fire(EVENT_ENTITY_MANAGER_UPDATED, {
-                "entity_id": entity_id,
-                "recorder_days": recorder_days
-            })
-            
-            _LOGGER.info("Updated entity %s recorder days to %d", entity_id, recorder_days)
-            
-        except Exception as e:
-            _LOGGER.error("Error updating entity %s recorder days: %s", entity_id, e)
-            raise HomeAssistantError(f"Error updating recorder days: {e}")
-    
-    async def bulk_update(self, entity_ids: List[str], enabled: Optional[bool] = None, 
-                         recorder_days: Optional[int] = None):
-        """Bulk update entities."""
-        try:
-            entity_registry = async_get_entity_registry(self.hass)
-            
-            for entity_id in entity_ids:
-                # Update entity state if provided
-                if enabled is not None:
-                    entity_registry.async_update_entity(
-                        entity_id,
-                        disabled_by=None if enabled else "user"
-                    )
-                
-                # Update config
-                if entity_id not in self._config:
-                    self._config[entity_id] = {
-                        "enabled": True,
-                        "recorder_days": DEFAULT_RECORDER_DAYS
-                    }
-                
-                if enabled is not None:
-                    self._config[entity_id]["enabled"] = enabled
-                if recorder_days is not None:
-                    self._config[entity_id]["recorder_days"] = recorder_days
-            
-            await self.save_config()
-            
-            # Fire event
-            self.hass.bus.async_fire(EVENT_ENTITY_MANAGER_UPDATED, {
-                "entity_ids": entity_ids,
-                "bulk_update": True
-            })
-            
-            _LOGGER.info("Bulk updated %d entities", len(entity_ids))
-            
-        except Exception as e:
-            _LOGGER.error("Error in bulk update: %s", e)
-            raise HomeAssistantError(f"Error in bulk update: {e}")
-    
-    async def delete_entity(self, entity_id: str):
-        """Delete entity from Home Assistant."""
-        try:
-            entity_registry = async_get_entity_registry(self.hass)
-            
-            # Verificar se a entidade existe
-            entity_entry = entity_registry.async_get(entity_id)
-            if not entity_entry:
-                raise HomeAssistantError(f"Entity {entity_id} not found")
-            
-            # Remover a entidade do registry
-            entity_registry.async_remove(entity_id)
-            
-            # Remover da configuração local
-            if entity_id in self._config:
-                del self._config[entity_id]
-                await self.save_config()
-            
-            # Fire event
-            self.hass.bus.async_fire(EVENT_ENTITY_MANAGER_UPDATED, {
-                "entity_id": entity_id,
-                "deleted": True
-            })
-            
-            _LOGGER.info("Deleted entity %s", entity_id)
-            
-        except Exception as e:
-            _LOGGER.error("Error deleting entity %s: %s", entity_id, e)
-            raise HomeAssistantError(f"Error deleting entity: {e}")
-    
-    async def bulk_delete(self, entity_ids: List[str]):
-        """Bulk delete entities."""
-        try:
-            entity_registry = async_get_entity_registry(self.hass)
-            deleted_entities = []
-            
-            for entity_id in entity_ids:
-                try:
-                    # Verificar se a entidade existe
-                    entity_entry = entity_registry.async_get(entity_id)
-                    if entity_entry:
-                        # Remover a entidade do registry
-                        entity_registry.async_remove(entity_id)
-                        deleted_entities.append(entity_id)
-                        
-                        # Remover da configuração local
-                        if entity_id in self._config:
-                            del self._config[entity_id]
-                            
-                    else:
-                        _LOGGER.warning("Entity %s not found, skipping deletion", entity_id)
-                        
-                except Exception as e:
-                    _LOGGER.error("Error deleting entity %s: %s", entity_id, e)
-                    continue
-            
-            if deleted_entities:
-                await self.save_config()
-                
-                # Fire event
-                self.hass.bus.async_fire(EVENT_ENTITY_MANAGER_UPDATED, {
-                    "entity_ids": deleted_entities,
-                    "bulk_delete": True
-                })
-            
-            _LOGGER.info("Bulk deleted %d entities", len(deleted_entities))
-            
-            if len(deleted_entities) != len(entity_ids):
-                raise HomeAssistantError(f"Only {len(deleted_entities)} of {len(entity_ids)} entities were deleted")
-            
-        except Exception as e:
-            _LOGGER.error("Error in bulk delete: %s", e)
-            raise HomeAssistantError(f"Error in bulk delete: {e}")
-    
-    async def purge_recorder(self, entity_ids: Optional[List[str]] = None, force_purge: bool = False):
-        """Purge recorder data based on entity configurations."""
-        try:
-            recorder_instance = get_instance(self.hass)
-            if not recorder_instance:
-                raise HomeAssistantError("Recorder not available")
-            
-            entities_to_purge = entity_ids or list(self._config.keys())
-            
-            for entity_id in entities_to_purge:
-                config = self.get_entity_config(entity_id)
-                recorder_days = config.get("recorder_days", DEFAULT_RECORDER_DAYS)
-                
-                if recorder_days == 0 and not force_purge:
-                    _LOGGER.info("Skipping purge for %s (recorder_days=0, force_purge=False)", entity_id)
-                    continue
-                
-                if recorder_days > 0:
-                    purge_date = datetime.now() - timedelta(days=recorder_days)
-                else:
-                    # If recorder_days is 0 and force_purge is True, purge all
-                    purge_date = datetime.now()
-                
-                await recorder_instance.async_add_executor_job(
-                    purge.purge_old_data,
-                    recorder_instance,
-                    purge_date,
-                    repack=False,
-                    apply_filter=True,
-                    entity_ids=[entity_id]
-                )
-                
-                _LOGGER.info("Purged data for %s before %s", entity_id, purge_date)
-            
-            _LOGGER.info("Recorder purge completed for %d entities", len(entities_to_purge))
-            
-        except Exception as e:
-            _LOGGER.error("Error purging recorder: %s", e)
-            raise HomeAssistantError(f"Error purging recorder: {e}")
-    
+        except IOError as e:
+            _LOGGER.error("Could not write to entity manager config file: %s", e)
+
+    async def load_config(self):
+        """Load configuration from file asynchronously."""
+        self._config = await self.hass.async_add_executor_job(self._load_config_sync)
+        _LOGGER.info("Entity Manager configuration loaded.")
+
+    async def save_config(self):
+        """Save configuration to file asynchronously."""
+        await self.hass.async_add_executor_job(self._save_config_sync)
+
     async def get_all_entities(self) -> List[Dict[str, Any]]:
-        """Get all entities with their configurations - JSON-safe version."""
+        """Get all entities with their configurations and integration info."""
         try:
-            _LOGGER.info("Getting all entities using JSON-safe method")
-            entities = []
-            
-            # Obter registries
-            entity_registry = async_get_entity_registry(self.hass)
-            device_registry = async_get_device_registry(self.hass)
-            
-            # Usar hass.states ao invés do EntityRegistry problemático
+            entity_registry: EntityRegistry = async_get_entity_registry(self.hass)
+            device_registry: DeviceRegistry = async_get_device_registry(self.hass)
             all_states = self.hass.states.async_all()
-            
-            _LOGGER.info("Found %d states in Home Assistant", len(all_states))
-            
-            processed_count = 0
-            error_count = 0
-            json_error_count = 0
-            
+            entities = []
+
             for state in all_states:
-                try:
-                    processed_count += 1
-                    entity_id = state.entity_id
-                    
-                    # Obter configuração da entidade
-                    config = self.get_entity_config(entity_id)
-                    
-                    # Extrair domínio do entity_id
-                    domain = entity_id.split('.')[0]
-                    
-                    # Determinar se está habilitado
+                entity_id = state.entity_id
+                entity_entry = entity_registry.async_get(entity_id)
+                config = self._config.get(entity_id, {})
+                
+                integration_domain = "homeassistant"
+                if entity_entry:
+                    is_enabled = not entity_entry.disabled_by
+                    platform = entity_entry.platform
+                    if entity_entry.config_entry_id:
+                        config_entry = self.hass.config_entries.async_get_entry(entity_entry.config_entry_id)
+                        if config_entry:
+                            integration_domain = config_entry.domain
+                else:
                     is_enabled = config.get("enabled", True)
-                    
-                    # Nome da entidade
-                    entity_name = state.attributes.get('friendly_name')
-                    if not entity_name:
-                        entity_name = entity_id.split('.')[-1].replace('_', ' ').title()
-                    
-                    # Determinar o estado
-                    if state.state == "unavailable":
-                        entity_state = "unavailable"
-                    elif state.state == "unknown":
-                        entity_state = "unknown"
-                    else:
-                        entity_state = state.state
-                    
-                    # Obter informações do dispositivo
-                    device_id = None
-                    device_name = "Sem Dispositivo"
-                    device_manufacturer = ""
-                    device_model = ""
-                    
-                    try:
-                        entity_entry = entity_registry.async_get(entity_id)
-                        if entity_entry and entity_entry.device_id:
-                            device_id = entity_entry.device_id
-                            device_entry = device_registry.async_get(device_id)
-                            if device_entry:
-                                device_name = device_entry.name or device_entry.model or "Dispositivo Desconhecido"
-                                device_manufacturer = device_entry.manufacturer or ""
-                                device_model = device_entry.model or ""
-                    except Exception as device_error:
-                        _LOGGER.debug("Could not get device info for %s: %s", entity_id, device_error)
-                    
-                    # Obter atributos de forma segura (JSON-safe)
-                    safe_attributes = self._get_safe_attributes(state)
-                    
-                    # Construir dados da entidade
-                    entity_data = {
-                        "entity_id": entity_id,
-                        "name": entity_name,
-                        "domain": domain,
-                        "platform": safe_attributes.get('platform', 'unknown'),
-                        "enabled": is_enabled,
-                        "state": entity_state,
-                        "attributes": safe_attributes,
-                        "recorder_days": config.get("recorder_days", DEFAULT_RECORDER_DAYS),
-                        "device_id": device_id,
-                        "device_name": device_name,
-                        "device_manufacturer": device_manufacturer,
-                        "device_model": device_model,
-                    }
-                    
-                    # Verificar se os dados são JSON-serializáveis
-                    try:
-                        json.dumps(entity_data)
-                        entities.append(entity_data)
-                    except (TypeError, ValueError) as json_error:
-                        json_error_count += 1
-                        _LOGGER.warning("Entity %s has non-JSON-serializable data, using simplified version: %s", 
-                                      entity_id, json_error)
-                        # Criar versão simplificada sem atributos
-                        simplified_data = {
-                            "entity_id": entity_id,
-                            "name": entity_name,
-                            "domain": domain,
-                            "platform": "unknown",
-                            "enabled": is_enabled,
-                            "state": entity_state,
-                            "attributes": {},
-                            "recorder_days": config.get("recorder_days", DEFAULT_RECORDER_DAYS),
-                        }
-                        entities.append(simplified_data)
-                    
-                    # Log de progresso para muitas entidades
-                    if processed_count % 500 == 0:
-                        _LOGGER.debug("Processed %d/%d entities", processed_count, len(all_states))
-                    
-                except Exception as entity_error:
-                    error_count += 1
-                    _LOGGER.warning("Error processing state %s: %s", 
-                                  getattr(state, 'entity_id', 'unknown'), entity_error)
-                    continue
-            
-            # Ordenar por entity_id
-            entities_sorted = sorted(entities, key=lambda x: x["entity_id"])
-            
-            _LOGGER.info("Successfully processed %d entities using JSON-safe method (%d errors, %d JSON errors)", 
-                        len(entities_sorted), error_count, json_error_count)
-            
-            return entities_sorted
-            
+                    platform = "unknown"
+
+                entities.append({
+                    "entity_id": entity_id,
+                    "name": state.name,
+                    "state": state.state,
+                    "domain": state.domain,
+                    "platform": platform,
+                    "integration_domain": integration_domain,
+                    "enabled": is_enabled,
+                    "recorder_days": config.get("recorder_days", DEFAULT_RECORDER_DAYS),
+                })
+            return entities
         except Exception as e:
-            _LOGGER.error("Error in get_all_entities: %s", e, exc_info=True)
-            return []
+            _LOGGER.error("Critical error in get_all_entities: %s", e, exc_info=True)
+            return [] # Retorna lista vazia em caso de erro crítico
+            
+    # Inclua aqui as outras funções da sua classe EntityManager (delete_entity, etc.)

@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Entity Manager</title>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--primary-background-color, #fafafa);
+            color: var(--primary-text-color, #212121);
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: var(--card-background-color, white);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: var(--card-background-color, white);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            flex-wrap: wrap;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            min-width: 150px;
+        }
+        
+        .filter-group label {
+            font-weight: 500;
+            font-size: 14px;
+            color: var(--primary-text-color, #212121);
+        }
+        
+        .filter-group input, .filter-group select {
+            padding: 8px 12px;
+            border: 2px solid var(--divider-color, #e0e0e0);
+            border-radius: 4px;
+            font-size: 14px;
+            background: var(--card-background-color, white) !important;
+            color: var(--primary-text-color, #212121) !important;
+            min-height: 20px;
+        }
+        
+        /* Força a cor do texto nos campos de input */
+        .filter-group input {
+            color: #212121 !important;
+            background-color: white !important;
+        }
+        
+        .filter-group input:focus {
+            border-color: var(--primary-color, #03a9f4);
+            outline: none;
+            color: #212121 !important;
+            background-color: white !important;
+        }
+        
+        .filter-group select {
+            color: #212121 !important;
+            background-color: white !important;
+        }
+        
+        .filter-group select option {
+            color: #212121 !important;
+            background-color: white !important;
+        }
+        
+        .bulk-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: var(--card-background-color, white);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .bulk-actions button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color, #03a9f4);
+            color: white;
+        }
+        
+        .btn-success {
+            background-color: #4caf50;
+            color: white;
+        }
+        
+        .btn-danger {
+            background-color: #f44336;
+            color: white;
+        }
+        
+        .btn-warning {
+            background-color: #ff9800;
+            color: white;
+        }
+        
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-success:hover { opacity: 0.9; }
+        .btn-danger:hover { opacity: 0.9; }
+        .btn-warning:hover { opacity: 0.9; }
+        
+        .entities-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+            gap: 15px;
+        }
+        
+        .entity-card {
+            background: var(--card-background-color, white);
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-left: 4px solid var(--primary-color, #03a9f4);
+            transition: all 0.2s;
+        }
+        
+        .entity-card.disabled {
+            opacity: 0.6;
+            border-left-color: #ccc;
+        }
+        
+        .entity-card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        .entity-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+        
+        .entity-info {
+            flex: 1;
+        }
+        
+        .entity-name {
+            font-weight: 500;
+            font-size: 16px;
+            margin-bottom: 4px;
+            color: var(--primary-text-color, #212121);
+        }
+        
+        .entity-id {
+            font-size: 12px;
+            color: var(--secondary-text-color, #757575);
+            font-family: monospace;
+        }
+        
+        .entity-state {
+            font-size: 14px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: var(--divider-color, #e0e0e0);
+            white-space: nowrap;
+            margin-left: 10px;
+        }
+        
+        .entity-state.on { background: #4caf50; color: white; }
+        .entity-state.off { background: #f44336; color: white; }
+        .entity-state.unavailable { background: #9e9e9e; color: white; }
+        .entity-state.unknown { background: #607d8b; color: white; }
+        .entity-state.default { background: #2196f3; color: white; }
+        
+        .entity-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .control-group label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--secondary-text-color, #757575);
+        }
+        
+        .entity-controls input[type="checkbox"] {
+            transform: scale(1.2);
+            cursor: pointer;
+        }
+        
+        .entity-controls input[type="number"] {
+            width: 80px;
+            padding: 4px 8px;
+            border: 1px solid var(--divider-color, #e0e0e0);
+            border-radius: 4px;
+            background: var(--card-background-color, white);
+            color: var(--primary-text-color, #212121);
+        }
+        
+        .entity-controls button {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .toggle-btn {
+            background: var(--primary-color, #03a9f4);
+            color: white;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 16px;
+        }
+        
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c62828;
+        }
+        
+        .success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2e7d32;
+        }
+        
+        .info {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border-left: 4px solid #1976d2;
+        }
+        
+        .selected-count {
+            font-weight: 500;
+            margin-right: 10px;
+            color: var(--primary-text-color, #212121);
+        }
+        
+        .no-entities {
+            text-align: center;
+            padding: 40px;
+            color: var(--secondary-text-color, #757575);
+            font-size: 16px;
+        }
+        
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: var(--card-background-color, white);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-color, #03a9f4);
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: var(--secondary-text-color, #757575);
+            margin-top: 2px;
+        }
+        
+        /* Debug info */
+        .debug-info {
+            background: #f5f5f5;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            display: none;
+            border-left: 4px solid #2196f3;
+        }
+        
+        .version-status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 16px;
+            background: #e8f5e8;
+            border: 1px solid #4caf50;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 12px;
+        }
+        
+        .version-status.error {
+            background: #ffebee;
+            border-color: #f44336;
+            color: #c62828;
+        }
+        
+        .version-status.warning {
+            background: #fff3e0;
+            border-color: #ff9800;
+            color: #ef6c00;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>Entity Manager</h1>
+            <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                <span id="version-info">Versão: 2.0.0-FIXED | Carregado: <span id="load-timestamp"></span></span>
+            </div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn-primary" onclick="exportEntities()">📄 Exportar TXT</button>
+            <button class="btn-primary" onclick="toggleDebug()">🐛 Debug</button>
+            <button class="btn-primary" onclick="loadEntities()">🔄 Recarregar</button>
+        </div>
+    </div>
+    
+    <div id="message-area"></div>
+    
+    <div id="version-status" class="version-status">
+        <span>📋 Status: <span id="status-text">Verificando arquivo...</span></span>
+        <span>🔧 Filtros: <span id="filter-status">Carregando...</span></span>
+        <span>📊 API: <span id="api-status">Testando...</span></span>
+    </div>
+    
+    <div id="debug-info" class="debug-info">
+        <strong>🐛 Debug Info - Entity Manager v2.0.0-FIXED:</strong><br>
+        Página carregada: <span id="debug-page-load">carregando...</span><br>
+        Total de entidades carregadas: <span id="debug-total">0</span><br>
+        Domínios únicos: <span id="debug-domains">[]</span><br>
+        Estados únicos: <span id="debug-states">[]</span><br>
+        Último filtro aplicado: <span id="debug-filter">nenhum</span><br>
+        Funções de filtro: <span id="debug-functions">verificando...</span><br>
+        <strong>Arquivo correto carregado:</strong> <span id="debug-file-check">verificando...</span>
+    </div>
+    
+    <div class="stats" id="statsContainer" style="display: none;">
+        <div class="stat-item">
+            <div class="stat-number" id="totalEntities">0</div>
+            <div class="stat-label">Total</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number" id="enabledEntities">0</div>
+            <div class="stat-label">Habilitadas</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number" id="disabledEntities">0</div>
+            <div class="stat-label">Desabilitadas</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number" id="filteredEntities">0</div>
+            <div class="stat-label">Exibidas</div>
+        </div>
+    </div>
+    
+    <div class="filters">
+        <div class="filter-group">
+            <label>Buscar por Nome/ID:</label>
+            <input type="text" id="searchFilter" placeholder="Digite para filtrar..." autocomplete="off">
+        </div>
+        <div class="filter-group">
+            <label>Estado da Entidade:</label>
+            <select id="stateFilter">
+                <option value="">Todos os Estados</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Domínio:</label>
+            <select id="domainFilter">
+                <option value="">Carregando domínios...</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Status:</label>
+            <select id="enabledFilter">
+                <option value="">Todos</option>
+                <option value="enabled">Habilitados</option>
+                <option value="disabled">Desabilitados</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="bulk-actions">
+        <span class="selected-count">Selecionados: <span id="selectedCount">0</span></span>
+        <button class="btn-success" onclick="bulkEnable()">✅ Habilitar</button>
+        <button class="btn-danger" onclick="bulkDisable()">❌ Desabilitar</button>
+        <input type="number" id="bulkRecorderDays" placeholder="Dias" min="0" max="365" style="width: 80px;">
+        <button class="btn-primary" onclick="bulkUpdateRecorder()">📊 Definir Dias</button>
+        <button class="btn-warning" onclick="bulkPurge()">🗑️ Limpar Histórico</button>
+        <button class="btn-primary" onclick="selectAll()">☑️ Selecionar Todos</button>
+        <button class="btn-primary" onclick="selectNone()">☐ Limpar Seleção</button>
+    </div>
+    
+    <div id="entitiesContainer">
+        <div class="loading">Carregando entidades...</div>
+    </div>
+
+    <script>
+        let allEntities = [];
+        let filteredEntities = [];
+        let selectedEntities = new Set();
+        let debugMode = false;
+        
+        // Conectar com Home Assistant
+        const hass = parent.hass || window.hass;
+        
+        function toggleDebug() {
+            debugMode = !debugMode;
+            const debugInfo = document.getElementById('debug-info');
+            debugInfo.style.display = debugMode ? 'block' : 'none';
+            updateDebugInfo();
+        }
+        
+        function updateDebugInfo() {
+            if (!debugMode) return;
+            
+            const domains = [...new Set(allEntities.map(e => e.domain))].sort();
+            const states = [...new Set(allEntities.map(e => e.state || 'vazio'))].sort();
+            
+            document.getElementById('debug-total').textContent = allEntities.length;
+            document.getElementById('debug-domains').textContent = JSON.stringify(domains);
+            document.getElementById('debug-states').textContent = JSON.stringify(states);
+            
+            const searchText = document.getElementById('searchFilter').value;
+            const stateFilter = document.getElementById('stateFilter').value;
+            const domainFilter = document.getElementById('domainFilter').value;
+            const enabledFilter = document.getElementById('enabledFilter').value;
+            
+            document.getElementById('debug-filter').textContent = 
+                `busca: "${searchText}", estado: "${stateFilter}", domínio: "${domainFilter}", status: "${enabledFilter}"`;
+        }
+        
+        function updateVersionStatus() {
+            const statusDiv = document.getElementById('version-status');
+            const statusText = document.getElementById('status-text');
+            const filterStatus = document.getElementById('filter-status');
+            const apiStatus = document.getElementById('api-status');
+            
+            // Verificar se as funções existem
+            const hasFunctions = typeof updateStateFilter === 'function' && typeof updateDomainFilter === 'function';
+            
+            if (!hasFunctions) {
+                statusDiv.className = 'version-status error';
+                statusText.textContent = '❌ Arquivo desatualizado';
+                filterStatus.textContent = '❌ Funções ausentes';
+                apiStatus.textContent = '⚠️ Não testado';
+                return;
+            }
+            
+            // Verificar se as entidades foram carregadas
+            if (allEntities.length === 0) {
+                statusDiv.className = 'version-status warning';
+                statusText.textContent = '⚠️ Carregando...';
+                filterStatus.textContent = '⚠️ Aguardando dados';
+                apiStatus.textContent = '⚠️ Testando...';
+                return;
+            }
+            
+            // Verificar se os filtros têm opções
+            const domainSelect = document.getElementById('domainFilter');
+            const stateSelect = document.getElementById('stateFilter');
+            
+            const domainCount = domainSelect ? domainSelect.options.length - 1 : 0; // -1 para excluir "Todos"
+            const stateCount = stateSelect ? stateSelect.options.length - 1 : 0;
+            
+            if (domainCount > 3 && stateCount > 3) {
+                statusDiv.className = 'version-status';
+                statusText.textContent = '✅ Funcionando corretamente';
+                filterStatus.textContent = `✅ ${domainCount} domínios, ${stateCount} estados`;
+                apiStatus.textContent = `✅ ${allEntities.length} entidades`;
+            } else {
+                statusDiv.className = 'version-status warning';
+                statusText.textContent = '⚠️ Filtros incompletos';
+                filterStatus.textContent = `⚠️ ${domainCount} domínios, ${stateCount} estados`;
+                apiStatus.textContent = `⚠️ ${allEntities.length} entidades`;
+            }
+        }
+        
+        // Setup event listeners nos filtros
+        function setupFilterListeners() {
+            const filters = ['searchFilter', 'stateFilter', 'domainFilter', 'enabledFilter'];
+            filters.forEach(filterId => {
+                const element = document.getElementById(filterId);
+                if (element) {
+                    // Remove listeners existentes
+                    element.removeEventListener('input', handleFilterChange);
+                    element.removeEventListener('change', handleFilterChange);
+                    element.removeEventListener('keyup', handleFilterChange);
+                    
+                    // Adiciona novos listeners
+                    element.addEventListener('input', handleFilterChange);
+                    element.addEventListener('change', handleFilterChange);
+                    element.addEventListener('keyup', handleFilterChange);
+                    
+                    console.log(`✅ Listener configurado para ${filterId}`);
+                }
+            });
+        }
+        
+        function handleFilterChange(event) {
+            console.log(`🔍 Filtro alterado: ${event.target.id} = "${event.target.value}"`);
+            filterEntities();
+            updateDebugInfo();
+        }
+        
+        // Função para obter classe CSS do estado
+        function getStateClass(state) {
+            if (state === 'unavailable') return 'unavailable';
+            if (state === 'unknown') return 'unknown';
+            if (state === 'on') return 'on';
+            if (state === 'off') return 'off';
+            return 'default';
+        }
+        
+        async function loadEntities() {
+            try {
+                showMessage('Carregando entidades...', 'info');
+                updateVersionStatus(); // Atualizar status
+                
+                // Salvar valores dos filtros
+                const currentFilters = saveFilters();
+                
+                // Buscar todas as entidades via API
+                console.log('🔄 Buscando entidades da API...');
+                const response = await hass.callApi('GET', 'entity_manager/entities');
+                allEntities = response || [];
+                
+                console.log(`✅ ${allEntities.length} entidades carregadas`);
+                
+                // Atualizar filtros dinamicamente
+                updateStateFilter();
+                updateDomainFilter();
+                
+                // Restaurar filtros
+                restoreFilters(currentFilters);
+                
+                // Configurar listeners APÓS carregar tudo
+                setTimeout(() => {
+                    setupFilterListeners();
+                    filterEntities();
+                    updateStats();
+                    updateDebugInfo();
+                    updateVersionStatus(); // Atualizar status novamente
+                }, 100);
+                
+                showMessage(`${allEntities.length} entidades carregadas com sucesso!`, 'success');
+                
+            } catch (error) {
+                console.error('❌ Erro ao carregar entidades:', error);
+                showMessage('Erro ao carregar entidades: ' + error.message, 'error');
+                updateVersionStatus(); // Atualizar status mesmo com erro
+            }
+        }
+        
+        function saveFilters() {
+            return {
+                search: document.getElementById('searchFilter')?.value || '',
+                state: document.getElementById('stateFilter')?.value || '',
+                domain: document.getElementById('domainFilter')?.value || '',
+                enabled: document.getElementById('enabledFilter')?.value || ''
+            };
+        }
+        
+        function restoreFilters(filters) {
+            if (filters.search) {
+                const searchInput = document.getElementById('searchFilter');
+                searchInput.value = filters.search;
+                console.log(`🔄 Valor de busca restaurado: "${filters.search}"`);
+            }
+            if (filters.state) document.getElementById('stateFilter').value = filters.state;
+            if (filters.domain) document.getElementById('domainFilter').value = filters.domain;
+            if (filters.enabled) document.getElementById('enabledFilter').value = filters.enabled;
+        }
+        
+        function updateStateFilter() {
+            const stateFilter = document.getElementById('stateFilter');
+            const currentValue = stateFilter.value;
+            
+            // Obter TODOS os estados únicos das entidades
+            const states = [...new Set(allEntities.map(e => e.state || 'vazio'))].sort();
+            
+            console.log(`🔧 Atualizando filtro de estados. Encontrados: ${states.length} estados`);
+            console.log(`📋 Estados: ${states.join(', ')}`);
+            
+            // Limpar completamente o select
+            stateFilter.innerHTML = '';
+            
+            // Adicionar opção "Todos"
+            const allOption = document.createElement('option');
+            allOption.value = '';
+            allOption.textContent = 'Todos os Estados';
+            stateFilter.appendChild(allOption);
+            
+            // Adicionar cada estado único
+            states.forEach(state => {
+                const option = document.createElement('option');
+                option.value = state;
+                option.textContent = state || 'Vazio';
+                stateFilter.appendChild(option);
+                console.log(`➕ Estado adicionado: "${state}"`);
+            });
+            
+            // Restaurar valor selecionado se ainda existir
+            if (currentValue && states.includes(currentValue)) {
+                stateFilter.value = currentValue;
+                console.log(`✅ Estado anterior restaurado: ${currentValue}`);
+            }
+            
+            console.log(`✅ Filtro de estados atualizado. Total de opções: ${stateFilter.options.length}`);
+        }
+        
+        function updateDomainFilter() {
+            const domainFilter = document.getElementById('domainFilter');
+            const currentValue = domainFilter.value;
+            
+            // Obter TODOS os domínios únicos das entidades carregadas
+            const domains = [...new Set(allEntities.map(e => e.domain))].sort();
+            
+            console.log(`🔧 Atualizando filtro de domínios. Encontrados: ${domains.length} domínios`);
+            console.log(`📋 Domínios: ${domains.join(', ')}`);
+            
+            // Limpar completamente o select
+            domainFilter.innerHTML = '';
+            
+            // Adicionar opção "Todos"
+            const allOption = document.createElement('option');
+            allOption.value = '';
+            allOption.textContent = 'Todos os Domínios';
+            domainFilter.appendChild(allOption);
+            
+            // Adicionar cada domínio
+            domains.forEach(domain => {
+                const option = document.createElement('option');
+                option.value = domain;
+                option.textContent = domain;
+                domainFilter.appendChild(option);
+                console.log(`➕ Domínio adicionado: ${domain}`);
+            });
+            
+            // Restaurar valor selecionado se ainda existir
+            if (currentValue && domains.includes(currentValue)) {
+                domainFilter.value = currentValue;
+                console.log(`✅ Valor anterior restaurado: ${currentValue}`);
+            }
+            
+            console.log(`✅ Filtro de domínios atualizado. Total de opções: ${domainFilter.options.length}`);
+        }
+        
+        function filterEntities() {
+            const searchText = document.getElementById('searchFilter').value.toLowerCase().trim();
+            const stateFilter = document.getElementById('stateFilter').value;
+            const domainFilter = document.getElementById('domainFilter').value;
+            const enabledFilter = document.getElementById('enabledFilter').value;
+            
+            console.log(`🔍 Aplicando filtros:`);
+            console.log(`   Busca: "${searchText}"`);
+            console.log(`   Estado: "${stateFilter}"`);
+            console.log(`   Domínio: "${domainFilter}"`);
+            console.log(`   Status: "${enabledFilter}"`);
+            
+            const startCount = allEntities.length;
+            
+            filteredEntities = allEntities.filter(entity => {
+                const matchesSearch = !searchText || 
+                    entity.entity_id.toLowerCase().includes(searchText) || 
+                    entity.name.toLowerCase().includes(searchText);
+                
+                // Filtro de estado: comparar diretamente com o estado da entidade
+                const matchesState = !stateFilter || entity.state === stateFilter;
+                
+                const matchesDomain = !domainFilter || entity.domain === domainFilter;
+                const matchesEnabled = !enabledFilter || 
+                    (enabledFilter === 'enabled' && entity.enabled) ||
+                    (enabledFilter === 'disabled' && !entity.enabled);
+                
+                return matchesSearch && matchesState && matchesDomain && matchesEnabled;
+            });
+            
+            console.log(`🎯 Filtro aplicado: ${startCount} → ${filteredEntities.length} entidades`);
+            
+            renderEntities();
+            updateStats();
+        }
+        
+        function renderEntities() {
+            const container = document.getElementById('entitiesContainer');
+            
+            if (allEntities.length === 0) {
+                container.innerHTML = '<div class="loading">Carregando entidades...</div>';
+                return;
+            }
+            
+            if (filteredEntities.length === 0) {
+                container.innerHTML = '<div class="no-entities">Nenhuma entidade encontrada com os filtros aplicados.</div>';
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="entities-grid">
+                    ${filteredEntities.map(entity => createEntityCard(entity)).join('')}
+                </div>
+            `;
+            
+            // Reativar listeners dos checkboxes
+            setupEntityListeners();
+        }
+        
+        function setupEntityListeners() {
+            // Adicionar listeners para os checkboxes de seleção
+            filteredEntities.forEach(entity => {
+                const selectCheckbox = document.querySelector(`[data-select-entity="${entity.entity_id}"]`);
+                const enabledCheckbox = document.querySelector(`[data-enabled-entity="${entity.entity_id}"]`);
+                const recorderInput = document.querySelector(`[data-recorder-entity="${entity.entity_id}"]`);
+                
+                if (selectCheckbox) {
+                    selectCheckbox.addEventListener('change', function() {
+                        toggleSelection(entity.entity_id, this.checked);
+                    });
+                }
+                
+                if (enabledCheckbox) {
+                    enabledCheckbox.addEventListener('change', function() {
+                        toggleEntity(entity.entity_id, this.checked);
+                    });
+                }
+                
+                if (recorderInput) {
+                    recorderInput.addEventListener('change', function() {
+                        updateRecorderDays(entity.entity_id, this.value);
+                    });
+                }
+            });
+        }
+        
+        function createEntityCard(entity) {
+            const isSelected = selectedEntities.has(entity.entity_id);
+            const stateClass = getStateClass(entity.state);
+            const displayState = entity.state || 'não fornecido';
+            
+            return `
+                <div class="entity-card ${!entity.enabled ? 'disabled' : ''}" data-entity-id="${entity.entity_id}">
+                    <div class="entity-header">
+                        <div class="entity-info">
+                            <div class="entity-name">${entity.name}</div>
+                            <div class="entity-id">${entity.entity_id}</div>
+                        </div>
+                        <div class="entity-state ${stateClass}">${displayState}</div>
+                    </div>
+                    <div class="entity-controls">
+                        <div class="control-group">
+                            <input type="checkbox" ${isSelected ? 'checked' : ''} 
+                                   data-select-entity="${entity.entity_id}">
+                            <label>Selecionar</label>
+                        </div>
+                        <div class="control-group">
+                            <input type="checkbox" ${entity.enabled ? 'checked' : ''} 
+                                   data-enabled-entity="${entity.entity_id}">
+                            <label>${entity.enabled ? 'Habilitado' : 'Desabilitado'}</label>
+                        </div>
+                        <div class="control-group">
+                            <label>Dias:</label>
+                            <input type="number" value="${entity.recorder_days}" min="0" max="365"
+                                   data-recorder-entity="${entity.entity_id}">
+                        </div>
+                        <button class="toggle-btn" onclick="purgeEntity('${entity.entity_id}')">🗑️</button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function toggleSelection(entityId, checked) {
+            if (checked) {
+                selectedEntities.add(entityId);
+            } else {
+                selectedEntities.delete(entityId);
+            }
+            updateSelectedCount();
+        }
+        
+        function updateSelectedCount() {
+            document.getElementById('selectedCount').textContent = selectedEntities.size;
+        }
+        
+        function updateStats() {
+            const statsContainer = document.getElementById('statsContainer');
+            
+            if (allEntities.length > 0) {
+                statsContainer.style.display = 'flex';
+                
+                const enabled = allEntities.filter(e => e.enabled).length;
+                const disabled = allEntities.length - enabled;
+                
+                document.getElementById('totalEntities').textContent = allEntities.length;
+                document.getElementById('enabledEntities').textContent = enabled;
+                document.getElementById('disabledEntities').textContent = disabled;
+                document.getElementById('filteredEntities').textContent = filteredEntities.length;
+            } else {
+                statsContainer.style.display = 'none';
+            }
+        }
+        
+        function selectAll() {
+            selectedEntities.clear();
+            filteredEntities.forEach(entity => {
+                selectedEntities.add(entity.entity_id);
+            });
+            
+            // Atualizar checkboxes visuais
+            document.querySelectorAll('[data-select-entity]').forEach(cb => {
+                const entityId = cb.getAttribute('data-select-entity');
+                cb.checked = selectedEntities.has(entityId);
+            });
+            
+            updateSelectedCount();
+        }
+        
+        function selectNone() {
+            selectedEntities.clear();
+            document.querySelectorAll('[data-select-entity]').forEach(cb => cb.checked = false);
+            updateSelectedCount();
+        }
+        
+        async function toggleEntity(entityId, enabled) {
+            try {
+                await hass.callService('entity_manager', 'update_entity_state', {
+                    entity_id: entityId,
+                    enabled: enabled
+                });
+                
+                // Atualizar entidade local
+                const entity = allEntities.find(e => e.entity_id === entityId);
+                if (entity) {
+                    entity.enabled = enabled;
+                }
+                
+                // Atualizar label visual
+                const checkbox = document.querySelector(`[data-enabled-entity="${entityId}"]`);
+                if (checkbox) {
+                    const label = checkbox.parentElement.querySelector('label');
+                    if (label) {
+                        label.textContent = enabled ? 'Habilitado' : 'Desabilitado';
+                    }
+                }
+                
+                showMessage(`Entidade ${enabled ? 'habilitada' : 'desabilitada'} com sucesso!`, 'success');
+                
+                // Reapply filters to update visual state
+                filterEntities();
+                
+            } catch (error) {
+                console.error('Error toggling entity:', error);
+                showMessage('Erro ao alterar entidade: ' + error.message, 'error');
+                // Reverter checkbox
+                const checkbox = document.querySelector(`[data-enabled-entity="${entityId}"]`);
+                if (checkbox) {
+                    checkbox.checked = !enabled;
+                }
+            }
+        }
+        
+        async function updateRecorderDays(entityId, days) {
+            try {
+                await hass.callService('entity_manager', 'update_recorder_days', {
+                    entity_id: entityId,
+                    recorder_days: parseInt(days)
+                });
+                
+                // Atualizar entidade local
+                const entity = allEntities.find(e => e.entity_id === entityId);
+                if (entity) {
+                    entity.recorder_days = parseInt(days);
+                }
+                
+                showMessage('Dias do recorder atualizados com sucesso!', 'success');
+                
+            } catch (error) {
+                console.error('Error updating recorder days:', error);
+                showMessage('Erro ao atualizar dias do recorder: ' + error.message, 'error');
+            }
+        }
+        
+        async function bulkEnable() {
+            if (selectedEntities.size === 0) {
+                showMessage('Selecione pelo menos uma entidade', 'error');
+                return;
+            }
+            
+            try {
+                await hass.callService('entity_manager', 'bulk_update', {
+                    entity_ids: Array.from(selectedEntities),
+                    enabled: true
+                });
+                
+                showMessage(`${selectedEntities.size} entidades habilitadas com sucesso!`, 'success');
+                
+                // Atualizar entidades locais
+                selectedEntities.forEach(entityId => {
+                    const entity = allEntities.find(e => e.entity_id === entityId);
+                    if (entity) {
+                        entity.enabled = true;
+                    }
+                });
+                
+                filterEntities();
+                
+            } catch (error) {
+                showMessage('Erro na atualização em lote: ' + error.message, 'error');
+            }
+        }
+        
+        async function bulkDisable() {
+            if (selectedEntities.size === 0) {
+                showMessage('Selecione pelo menos uma entidade', 'error');
+                return;
+            }
+            
+            try {
+                await hass.callService('entity_manager', 'bulk_update', {
+                    entity_ids: Array.from(selectedEntities),
+                    enabled: false
+                });
+                
+                showMessage(`${selectedEntities.size} entidades desabilitadas com sucesso!`, 'success');
+                
+                // Atualizar entidades locais
+                selectedEntities.forEach(entityId => {
+                    const entity = allEntities.find(e => e.entity_id === entityId);
+                    if (entity) {
+                        entity.enabled = false;
+                    }
+                });
+                
+                filterEntities();
+                
+            } catch (error) {
+                showMessage('Erro na atualização em lote: ' + error.message, 'error');
+            }
+        }
+        
+        async function bulkUpdateRecorder() {
+            if (selectedEntities.size === 0) {
+                showMessage('Selecione pelo menos uma entidade', 'error');
+                return;
+            }
+            
+            const days = document.getElementById('bulkRecorderDays').value;
+            if (!days) {
+                showMessage('Digite o número de dias', 'error');
+                return;
+            }
+            
+            try {
+                await hass.callService('entity_manager', 'bulk_update', {
+                    entity_ids: Array.from(selectedEntities),
+                    recorder_days: parseInt(days)
+                });
+                
+                showMessage(`Dias do recorder atualizados para ${selectedEntities.size} entidades!`, 'success');
+                
+                // Atualizar entidades locais
+                selectedEntities.forEach(entityId => {
+                    const entity = allEntities.find(e => e.entity_id === entityId);
+                    if (entity) {
+                        entity.recorder_days = parseInt(days);
+                    }
+                });
+                
+                filterEntities();
+                
+            } catch (error) {
+                showMessage('Erro na atualização em lote: ' + error.message, 'error');
+            }
+        }
+        
+        async function bulkPurge() {
+            if (selectedEntities.size === 0) {
+                showMessage('Selecione pelo menos uma entidade', 'error');
+                return;
+            }
+            
+            if (!confirm(`Tem certeza que deseja limpar o histórico de ${selectedEntities.size} entidades?`)) {
+                return;
+            }
+            
+            try {
+                await hass.callService('entity_manager', 'purge_recorder', {
+                    entity_ids: Array.from(selectedEntities)
+                });
+                
+                showMessage(`Histórico limpo para ${selectedEntities.size} entidades!`, 'success');
+                
+            } catch (error) {
+                showMessage('Erro ao limpar histórico: ' + error.message, 'error');
+            }
+        }
+        
+        async function purgeEntity(entityId) {
+            if (!confirm(`Tem certeza que deseja limpar o histórico da entidade ${entityId}?`)) {
+                return;
+            }
+            
+            try {
+                await hass.callService('entity_manager', 'purge_recorder', {
+                    entity_ids: [entityId]
+                });
+                
+                showMessage('Histórico limpo com sucesso!', 'success');
+                
+            } catch (error) {
+                showMessage('Erro ao limpar histórico: ' + error.message, 'error');
+            }
+        }
+        
+        function exportEntities() {
+            if (filteredEntities.length === 0) {
+                showMessage('Nenhuma entidade para exportar', 'error');
+                return;
+            }
+            
+            try {
+                // Agrupar entidades por dispositivo
+                const deviceGroups = {};
+                const noDeviceEntities = [];
+                
+                filteredEntities.forEach(entity => {
+                    if (entity.device_id && entity.device_name && entity.device_name !== "Sem Dispositivo") {
+                        const deviceKey = entity.device_name;
+                        if (!deviceGroups[deviceKey]) {
+                            deviceGroups[deviceKey] = {
+                                name: entity.device_name,
+                                manufacturer: entity.device_manufacturer || '',
+                                model: entity.device_model || '',
+                                entities: []
+                            };
+                        }
+                        deviceGroups[deviceKey].entities.push(entity.entity_id);
+                    } else {
+                        noDeviceEntities.push(entity.entity_id);
+                    }
+                });
+                
+                // Construir conteúdo do arquivo
+                let content = `# Exportação de Entidades - Entity Manager\n`;
+                content += `# Data: ${new Date().toLocaleString('pt-BR')}\n`;
+                content += `# Total de entidades: ${filteredEntities.length}\n\n`;
+                
+                // Dispositivos com entidades
+                const sortedDevices = Object.values(deviceGroups).sort((a, b) => a.name.localeCompare(b.name));
+                
+                if (sortedDevices.length > 0) {
+                    content += `=== ENTIDADES POR DISPOSITIVO ===\n\n`;
+                    
+                    sortedDevices.forEach(device => {
+                        content += `Dispositivo: ${device.name}\n`;
+                        if (device.manufacturer) {
+                            content += `Fabricante: ${device.manufacturer}\n`;
+                        }
+                        if (device.model) {
+                            content += `Modelo: ${device.model}\n`;
+                        }
+                        content += `Entidades (${device.entities.length}):\n`;
+                        
+                        device.entities.sort().forEach(entityId => {
+                            content += `  - ${entityId}\n`;
+                        });
+                        content += `\n`;
+                    });
+                }
+                
+                // Entidades sem dispositivo
+                if (noDeviceEntities.length > 0) {
+                    content += `=== ENTIDADES SEM DISPOSITIVO ===\n`;
+                    content += `Total: ${noDeviceEntities.length}\n\n`;
+                    
+                    noDeviceEntities.sort().forEach(entityId => {
+                        content += `  - ${entityId}\n`;
+                    });
+                }
+                
+                // Estatísticas finais
+                content += `\n=== ESTATÍSTICAS ===\n`;
+                content += `Total de dispositivos: ${sortedDevices.length}\n`;
+                content += `Entidades com dispositivo: ${filteredEntities.length - noDeviceEntities.length}\n`;
+                content += `Entidades sem dispositivo: ${noDeviceEntities.length}\n`;
+                content += `Total de entidades: ${filteredEntities.length}\n`;
+                
+                // Download do arquivo
+                const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `entidades_${new Date().toISOString().slice(0, 10)}.txt`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+                
+                showMessage(`Arquivo exportado com ${filteredEntities.length} entidades!`, 'success');
+                
+            } catch (error) {
+                console.error('Error exporting entities:', error);
+                showMessage('Erro ao exportar arquivo: ' + error.message, 'error');
+            }
+        }
+        
+        function showMessage(message, type) {
+            const messageArea = document.getElementById('message-area');
+            messageArea.innerHTML = `<div class="${type}">${message}</div>`;
+            
+            setTimeout(() => {
+                messageArea.innerHTML = '';
+            }, 5000);
+        }
+        
+        // Carregar entidades na inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📄 DOM carregado, iniciando Entity Manager...');
+            
+            // Definir informações de versão
+            const version = "2.0.0-FIXED";
+            const loadTime = new Date().toLocaleString('pt-BR');
+            
+            // Atualizar timestamp na página
+            document.getElementById('load-timestamp').textContent = loadTime;
+            
+            // Verificar se as funções corretas estão presentes
+            const hasFunctions = typeof updateStateFilter === 'function' && typeof updateDomainFilter === 'function';
+            
+            // Atualizar debug info
+            document.getElementById('debug-page-load').textContent = loadTime;
+            document.getElementById('debug-functions').textContent = hasFunctions ? '✅ updateStateFilter, updateDomainFilter' : '❌ Funções ausentes';
+            document.getElementById('debug-file-check').textContent = hasFunctions ? '✅ SIM - Arquivo correto' : '❌ NÃO - Arquivo desatualizado';
+            
+            // Console logs para debug
+            console.log('🔧 ENTITY MANAGER DEBUG INFO:');
+            console.log('   📅 Versão:', version);
+            console.log('   📅 Carregado em:', loadTime);
+            console.log('   🔧 updateStateFilter:', typeof updateStateFilter === 'function' ? '✅' : '❌');
+            console.log('   🔧 updateDomainFilter:', typeof updateDomainFilter === 'function' ? '✅' : '❌');
+            console.log('   📄 Arquivo correto:', hasFunctions ? '✅' : '❌');
+            console.log('=====================================');
+            
+            // Atualizar status visual inicial
+            updateVersionStatus();
+            
+            // Alerta se arquivo incorreto
+            if (!hasFunctions) {
+                setTimeout(() => {
+                    alert('⚠️ ARQUIVO INCORRETO CARREGADO!\n\nAs funções updateStateFilter e updateDomainFilter não foram encontradas.\n\nVerifique se você salvou o arquivo correto e limpe o cache do navegador.');
+                }, 3000);
+            } else {
+                console.log('✅ Arquivo correto carregado - iniciando carregamento de entidades...');
+            }
+            
+            loadEntities();
+        });
+    </script>
+</body>
+</html>
