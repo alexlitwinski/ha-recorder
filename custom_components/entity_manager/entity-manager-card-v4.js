@@ -27,6 +27,24 @@ class EntityManagerCard extends HTMLElement {
         }
     }
 
+    // Função para normalizar estado para filtros
+    normalizeState(state) {
+        if (state === 'unavailable') return 'unavailable';
+        if (state === 'unknown') return 'unknown';
+        if (!state || state === '') return 'not_provided';
+        return 'normal';
+    }
+
+    // Função para obter classe CSS do estado
+    getStateClass(state) {
+        if (state === 'unavailable') return 'unavailable';
+        if (state === 'unknown') return 'unknown';
+        if (!state || state === '') return 'not_provided';
+        if (state === 'on') return 'on';
+        if (state === 'off') return 'off';
+        return 'normal';
+    }
+
     async loadEntities() {
         if (!this._hass || this.isLoading) return;
 
@@ -47,6 +65,11 @@ class EntityManagerCard extends HTMLElement {
             }
 
             let entities = await response.json();
+
+            // Adicionar propriedade de estado normalizado para cada entidade
+            entities.forEach(entity => {
+                entity.normalized_state = this.normalizeState(entity.state);
+            });
 
             // Aplicar filtros de configuração
             if (this.config.domains.length > 0) {
@@ -231,6 +254,7 @@ class EntityManagerCard extends HTMLElement {
                 .entity-state.unavailable { background: #9e9e9e; }
                 .entity-state.not_provided { background: #ff9800; }
                 .entity-state.unknown { background: #607d8b; }
+                .entity-state.normal { background: #2196f3; }
                 
                 .entity-controls {
                     display: flex;
@@ -274,6 +298,16 @@ class EntityManagerCard extends HTMLElement {
                     font-size: 11px;
                     background: var(--primary-color);
                     color: var(--text-primary-color);
+                }
+                
+                .delete-btn {
+                    padding: 4px 8px;
+                    border: none;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 11px;
+                    background: #f44336;
+                    color: white;
                 }
                 
                 .selected-count {
@@ -335,7 +369,10 @@ class EntityManagerCard extends HTMLElement {
             
             <div class="card-header">
                 <h3>${this.config.title}</h3>
-                <button class="refresh-btn" id="refreshBtn">🔄 Recarregar</button>
+                <div style="display: flex; gap: 8px;">
+                    <button class="refresh-btn" id="exportBtn">📄 Exportar</button>
+                    <button class="refresh-btn" id="refreshBtn">🔄 Recarregar</button>
+                </div>
             </div>
             
             ${this.renderStats()}
@@ -393,8 +430,7 @@ class EntityManagerCard extends HTMLElement {
                     <label>Estado:</label>
                     <select id="stateFilter">
                         <option value="">Todos</option>
-                        <option value="on">Ligado (on)</option>
-                        <option value="off">Desligado (off)</option>
+                        <option value="normal">Normal</option>
                         <option value="unavailable">Indisponível</option>
                         <option value="not_provided">Não Fornecido</option>
                         <option value="unknown">Desconhecido</option>
@@ -428,6 +464,7 @@ class EntityManagerCard extends HTMLElement {
                 <input type="number" id="bulkRecorderDays" placeholder="Dias" min="0" max="365" style="width: 60px;">
                 <button class="btn-primary" id="bulkRecorderBtn">📊 Definir Dias</button>
                 <button class="btn-warning" id="bulkPurgeBtn">🗑️ Limpar</button>
+                <button class="btn-danger" id="bulkDeleteBtn">🗑️ Excluir</button>
                 <button class="btn-primary" id="selectAllBtn">☑️ Todos</button>
                 <button class="btn-primary" id="selectNoneBtn">☐ Limpar</button>
             </div>
@@ -452,6 +489,8 @@ class EntityManagerCard extends HTMLElement {
     
     renderEntityRow(entity) {
         const isSelected = this.selectedEntities.has(entity.entity_id);
+        const stateClass = this.getStateClass(entity.state);
+        const displayState = entity.state || 'não fornecido';
         
         return `
             <div class="entity-row ${!entity.enabled ? 'disabled' : ''}" data-entity-id="${entity.entity_id}">
@@ -459,8 +498,8 @@ class EntityManagerCard extends HTMLElement {
                     <div class="entity-name">${entity.name}</div>
                     <div class="entity-id">${entity.entity_id}</div>
                 </div>
-                <div class="entity-state ${entity.state}">
-                    ${entity.state}
+                <div class="entity-state ${stateClass}">
+                    ${displayState}
                 </div>
                 <div class="entity-controls">
                     <div class="control-group">
@@ -479,6 +518,7 @@ class EntityManagerCard extends HTMLElement {
                                data-recorder="${entity.entity_id}">
                     </div>
                     <button class="toggle-btn" data-purge="${entity.entity_id}">🗑️</button>
+                    <button class="delete-btn" data-delete="${entity.entity_id}">❌</button>
                 </div>
             </div>
         `;
@@ -489,6 +529,12 @@ class EntityManagerCard extends HTMLElement {
         const refreshBtn = this.shadowRoot.getElementById('refreshBtn');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', () => this.loadEntities());
+        }
+        
+        // Botão export
+        const exportBtn = this.shadowRoot.getElementById('exportBtn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => this.exportEntities());
         }
         
         // Filtros
@@ -509,6 +555,7 @@ class EntityManagerCard extends HTMLElement {
                 'bulkDisableBtn': () => this.bulkDisable(),
                 'bulkRecorderBtn': () => this.bulkUpdateRecorder(),
                 'bulkPurgeBtn': () => this.bulkPurge(),
+                'bulkDeleteBtn': () => this.bulkDelete(),
                 'selectAllBtn': () => this.selectAll(),
                 'selectNoneBtn': () => this.selectNone()
             };
@@ -544,6 +591,9 @@ class EntityManagerCard extends HTMLElement {
             if (target.hasAttribute('data-purge')) {
                 const entityId = target.getAttribute('data-purge');
                 this.purgeEntity(entityId);
+            } else if (target.hasAttribute('data-delete')) {
+                const entityId = target.getAttribute('data-delete');
+                this.deleteEntity(entityId);
             }
         });
     }
@@ -559,7 +609,7 @@ class EntityManagerCard extends HTMLElement {
                 entity.entity_id.toLowerCase().includes(searchText) || 
                 entity.name.toLowerCase().includes(searchText);
             
-            const matchesState = !stateFilter || entity.state === stateFilter;
+            const matchesState = !stateFilter || entity.normalized_state === stateFilter;
             const matchesDomain = !domainFilter || entity.domain === domainFilter;
             const matchesEnabled = !enabledFilter || 
                 (enabledFilter === 'enabled' && entity.enabled) ||
@@ -634,6 +684,27 @@ class EntityManagerCard extends HTMLElement {
             this.showMessage('Dias do recorder atualizados!', 'success');
         } catch (error) {
             this.showMessage('Erro ao atualizar dias: ' + error.message, 'error');
+        }
+    }
+    
+    async deleteEntity(entityId) {
+        if (!confirm(`Tem certeza que deseja EXCLUIR PERMANENTEMENTE a entidade ${entityId}?\n\nEsta ação não pode ser desfeita!`)) {
+            return;
+        }
+        
+        try {
+            await this._hass.callService('entity_manager', 'delete_entity', {
+                entity_id: entityId
+            });
+            
+            // Remover entidade da lista local
+            this.entities = this.entities.filter(e => e.entity_id !== entityId);
+            this.selectedEntities.delete(entityId);
+            
+            this.showMessage('Entidade excluída com sucesso!', 'success');
+            this.filterEntities();
+        } catch (error) {
+            this.showMessage('Erro ao excluir entidade: ' + error.message, 'error');
         }
     }
     
@@ -721,6 +792,33 @@ class EntityManagerCard extends HTMLElement {
         }
     }
     
+    async bulkDelete() {
+        if (this.selectedEntities.size === 0) {
+            this.showMessage('Selecione pelo menos uma entidade', 'error');
+            return;
+        }
+        
+        if (!confirm(`Tem certeza que deseja EXCLUIR PERMANENTEMENTE ${this.selectedEntities.size} entidades?\n\nEsta ação não pode ser desfeita!`)) {
+            return;
+        }
+        
+        try {
+            await this._hass.callService('entity_manager', 'bulk_delete', {
+                entity_ids: Array.from(this.selectedEntities)
+            });
+            
+            // Remover entidades da lista local
+            this.entities = this.entities.filter(e => !this.selectedEntities.has(e.entity_id));
+            this.selectedEntities.clear();
+            
+            this.showMessage('Entidades excluídas com sucesso!', 'success');
+            this.filterEntities();
+            this.updateSelectedCount();
+        } catch (error) {
+            this.showMessage('Erro ao excluir entidades: ' + error.message, 'error');
+        }
+    }
+    
     async purgeEntity(entityId) {
         if (!confirm(`Limpar histórico da entidade ${entityId}?`)) {
             return;
@@ -751,6 +849,98 @@ class EntityManagerCard extends HTMLElement {
         this.shadowRoot.innerHTML = `<div class="error">${message}</div>`;
     }
     
+    exportEntities() {
+        if (this.filteredEntities.length === 0) {
+            this.showMessage('Nenhuma entidade para exportar', 'error');
+            return;
+        }
+        
+        try {
+            // Agrupar entidades por dispositivo
+            const deviceGroups = {};
+            const noDeviceEntities = [];
+            
+            this.filteredEntities.forEach(entity => {
+                if (entity.device_id && entity.device_name && entity.device_name !== "Sem Dispositivo") {
+                    const deviceKey = entity.device_name;
+                    if (!deviceGroups[deviceKey]) {
+                        deviceGroups[deviceKey] = {
+                            name: entity.device_name,
+                            manufacturer: entity.device_manufacturer || '',
+                            model: entity.device_model || '',
+                            entities: []
+                        };
+                    }
+                    deviceGroups[deviceKey].entities.push(entity.entity_id);
+                } else {
+                    noDeviceEntities.push(entity.entity_id);
+                }
+            });
+            
+            // Construir conteúdo do arquivo
+            let content = `# Exportação de Entidades - Entity Manager Card\n`;
+            content += `# Data: ${new Date().toLocaleString('pt-BR')}\n`;
+            content += `# Total de entidades: ${this.filteredEntities.length}\n\n`;
+            
+            // Dispositivos com entidades
+            const sortedDevices = Object.values(deviceGroups).sort((a, b) => a.name.localeCompare(b.name));
+            
+            if (sortedDevices.length > 0) {
+                content += `=== ENTIDADES POR DISPOSITIVO ===\n\n`;
+                
+                sortedDevices.forEach(device => {
+                    content += `Dispositivo: ${device.name}\n`;
+                    if (device.manufacturer) {
+                        content += `Fabricante: ${device.manufacturer}\n`;
+                    }
+                    if (device.model) {
+                        content += `Modelo: ${device.model}\n`;
+                    }
+                    content += `Entidades (${device.entities.length}):\n`;
+                    
+                    device.entities.sort().forEach(entityId => {
+                        content += `  - ${entityId}\n`;
+                    });
+                    content += `\n`;
+                });
+            }
+            
+            // Entidades sem dispositivo
+            if (noDeviceEntities.length > 0) {
+                content += `=== ENTIDADES SEM DISPOSITIVO ===\n`;
+                content += `Total: ${noDeviceEntities.length}\n\n`;
+                
+                noDeviceEntities.sort().forEach(entityId => {
+                    content += `  - ${entityId}\n`;
+                });
+            }
+            
+            // Estatísticas finais
+            content += `\n=== ESTATÍSTICAS ===\n`;
+            content += `Total de dispositivos: ${sortedDevices.length}\n`;
+            content += `Entidades com dispositivo: ${this.filteredEntities.length - noDeviceEntities.length}\n`;
+            content += `Entidades sem dispositivo: ${noDeviceEntities.length}\n`;
+            content += `Total de entidades: ${this.filteredEntities.length}\n`;
+            
+            // Download do arquivo
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `entidades_card_${new Date().toISOString().slice(0, 10)}.txt`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            
+            this.showMessage(`Arquivo exportado com ${this.filteredEntities.length} entidades!`, 'success');
+            
+        } catch (error) {
+            console.error('Error exporting entities:', error);
+            this.showMessage('Erro ao exportar arquivo: ' + error.message, 'error');
+        }
+    }
+    
     getCardSize() {
         return 6;
     }
@@ -770,14 +960,14 @@ window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'entity-manager-card',
     name: 'Entity Manager Card',
-    description: 'Gerenciador avançado de entidades com controle de recorder',
+    description: 'Gerenciador avançado de entidades com controle de recorder e exportação',
     preview: true,
     documentationURL: 'https://github.com/alexlitwinski/ha-recorder',
 });
 
 // Adicionar ao console para debugging
 console.info(
-    '%c ENTITY-MANAGER-CARD %c v1.0.2 ',
+    '%c ENTITY-MANAGER-CARD %c v1.1.0 ',
     'color: orange; font-weight: bold; background: black',
     'color: white; font-weight: bold; background: dimgray'
 );
