@@ -1,6 +1,7 @@
 """API views for Entity Manager."""
 import json
 import logging
+import os
 from typing import Any, Dict
 
 from aiohttp import web
@@ -22,6 +23,11 @@ def setup_api(hass: HomeAssistant) -> None:
         hass.http.register_view(EntityManagerEntitiesView)
         hass.http.register_view(EntityManagerPanelView)
         hass.http.register_view(EntityManagerStatusView)
+        
+        # Novos endpoints
+        hass.http.register_view(EntityManagerIntelligentPurgeView)
+        hass.http.register_view(EntityManagerRecorderReportView)
+        hass.http.register_view(EntityManagerDownloadReportView)
         
         _LOGGER.info("Entity Manager API views registered successfully")
         
@@ -58,7 +64,7 @@ class EntityManagerStatusView(HomeAssistantView):
                 "status": "ok",
                 "message": "Entity Manager is running",
                 "integration_loaded": True,
-                "version": "1.1.0"
+                "version": "1.2.0"
             }),
             content_type="application/json"
         )
@@ -188,6 +194,145 @@ class EntityManagerEntitiesView(HomeAssistantView):
                 }),
                 status=500,
                 content_type="application/json"
+            )
+
+
+class EntityManagerIntelligentPurgeView(HomeAssistantView):
+    """View to execute intelligent purge."""
+    
+    url = "/api/entity_manager/intelligent_purge"
+    name = "api:entity_manager:intelligent_purge"
+    requires_auth = True
+    
+    async def post(self, request: web.Request) -> web.Response:
+        """Execute intelligent purge."""
+        hass = request.app["hass"]
+        manager = hass.data.get(DOMAIN)
+        
+        if not manager:
+            return web.Response(
+                text=json.dumps({"error": "Entity Manager not initialized"}),
+                status=500,
+                content_type="application/json"
+            )
+        
+        try:
+            data = await request.json()
+            force_purge = data.get("force_purge", False)
+            
+            _LOGGER.info("API: Starting intelligent purge (force_purge=%s)", force_purge)
+            
+            result = await manager.intelligent_purge(force_purge)
+            
+            return web.Response(
+                text=json.dumps(result),
+                content_type="application/json"
+            )
+            
+        except Exception as e:
+            _LOGGER.error("API: Error in intelligent purge: %s", e, exc_info=True)
+            return web.Response(
+                text=json.dumps({"error": str(e)}),
+                status=500,
+                content_type="application/json"
+            )
+
+
+class EntityManagerRecorderReportView(HomeAssistantView):
+    """View to generate recorder report."""
+    
+    url = "/api/entity_manager/recorder_report"
+    name = "api:entity_manager:recorder_report"
+    requires_auth = True
+    
+    async def post(self, request: web.Request) -> web.Response:
+        """Generate recorder report."""
+        hass = request.app["hass"]
+        manager = hass.data.get(DOMAIN)
+        
+        if not manager:
+            return web.Response(
+                text=json.dumps({"error": "Entity Manager not initialized"}),
+                status=500,
+                content_type="application/json"
+            )
+        
+        try:
+            data = await request.json()
+            limit = data.get("limit", 100)
+            days_back = data.get("days_back", 30)
+            
+            _LOGGER.info("API: Generating recorder report (limit=%d, days_back=%d)", limit, days_back)
+            
+            result = await manager.generate_recorder_report(limit, days_back)
+            
+            # Não retornar o report_data completo na resposta da API para economizar bandwidth
+            response_data = {
+                "status": result["status"],
+                "entities_analyzed": result["entities_analyzed"],
+                "total_records": result["total_records"],
+                "report_file": os.path.basename(result["report_file"]),  # Apenas o nome do arquivo
+                "download_url": f"/api/entity_manager/download_report/{os.path.basename(result['report_file'])}"
+            }
+            
+            return web.Response(
+                text=json.dumps(response_data),
+                content_type="application/json"
+            )
+            
+        except Exception as e:
+            _LOGGER.error("API: Error generating recorder report: %s", e, exc_info=True)
+            return web.Response(
+                text=json.dumps({"error": str(e)}),
+                status=500,
+                content_type="application/json"
+            )
+
+
+class EntityManagerDownloadReportView(HomeAssistantView):
+    """View to download recorder report."""
+    
+    url = "/api/entity_manager/download_report/{filename}"
+    name = "api:entity_manager:download_report"
+    requires_auth = True
+    
+    async def get(self, request: web.Request) -> web.Response:
+        """Download recorder report."""
+        hass = request.app["hass"]
+        filename = request.match_info["filename"]
+        
+        # Validar nome do arquivo por segurança
+        if not filename.startswith("recorder_report_") or not filename.endswith(".json"):
+            return web.Response(
+                text="Invalid filename",
+                status=400
+            )
+        
+        report_path = hass.config.path("custom_components", DOMAIN, filename)
+        
+        if not os.path.exists(report_path):
+            return web.Response(
+                text="Report file not found",
+                status=404
+            )
+        
+        try:
+            with open(report_path, 'r', encoding='utf-8') as f:
+                report_content = f.read()
+            
+            return web.Response(
+                text=report_content,
+                content_type="application/json",
+                headers={
+                    "Content-Disposition": f"attachment; filename={filename}"
+                }
+            )
+            
+        except Exception as e:
+            _LOGGER.error("Error downloading report: %s", e)
+            return web.Response(
+                text=f"Error reading report: {e}",
+                status=500
             )
 
 

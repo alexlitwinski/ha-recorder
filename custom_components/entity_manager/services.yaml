@@ -62,6 +62,29 @@ bulk_update:
           max: 365
           step: 1
 
+delete_entity:
+  name: Excluir Entidade
+  description: Remove permanentemente uma entidade do Home Assistant
+  fields:
+    entity_id:
+      name: ID da Entidade
+      description: ID da entidade a ser excluída
+      required: true
+      selector:
+        entity:
+
+bulk_delete:
+  name: Excluir Entidades em Lote
+  description: Remove permanentemente múltiplas entidades do Home Assistant
+  fields:
+    entity_ids:
+      name: IDs das Entidades
+      description: Lista de entidades a serem excluídas
+      required: true
+      selector:
+        entity:
+          multiple: true
+
 purge_recorder:
   name: Limpar Recorder
   description: Remove dados antigos do recorder baseado nas configurações
@@ -80,6 +103,43 @@ purge_recorder:
       default: false
       selector:
         boolean:
+
+intelligent_purge:
+  name: Limpeza Inteligente do Recorder
+  description: Executa limpeza automática baseada nas configurações de cada entidade
+  fields:
+    force_purge:
+      name: Forçar Limpeza
+      description: Força a limpeza mesmo para entidades com recorder_days=0
+      required: false
+      default: false
+      selector:
+        boolean:
+
+generate_recorder_report:
+  name: Gerar Relatório do Recorder
+  description: Gera relatório das entidades com mais registros no banco de dados
+  fields:
+    limit:
+      name: Limite de Entidades
+      description: Número máximo de entidades no relatório
+      required: false
+      default: 100
+      selector:
+        number:
+          min: 1
+          max: 1000
+          step: 1
+    days_back:
+      name: Período (Dias)
+      description: Número de dias para analisar no histórico
+      required: false
+      default: 30
+      selector:
+        number:
+          min: 1
+          max: 365
+          step: 1
 
 reload_config:
   name: Recarregar Configuração

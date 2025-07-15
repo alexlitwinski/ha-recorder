@@ -46,6 +46,14 @@ except ImportError:
     HAS_REGISTRY_ENTRY_DISABLER = False
     _LOGGER.debug("RegistryEntryDisabler not available, using string values")
 
+# NOVOS SERVIÇOS
+SERVICE_INTELLIGENT_PURGE = "intelligent_purge"
+SERVICE_GENERATE_RECORDER_REPORT = "generate_recorder_report"
+
+# NOVOS ATRIBUTOS
+ATTR_LIMIT = "limit"
+ATTR_DAYS_BACK = "days_back"
+
 # Schemas para os serviços
 UPDATE_ENTITY_STATE_SCHEMA = vol.Schema({
     vol.Required(ATTR_ENTITY_ID): cv.entity_id,
@@ -74,6 +82,16 @@ BULK_DELETE_SCHEMA = vol.Schema({
 PURGE_RECORDER_SCHEMA = vol.Schema({
     vol.Optional(ATTR_ENTITY_IDS): cv.entity_ids,
     vol.Optional(ATTR_FORCE_PURGE, default=False): cv.boolean,
+})
+
+# NOVOS SCHEMAS
+INTELLIGENT_PURGE_SCHEMA = vol.Schema({
+    vol.Optional(ATTR_FORCE_PURGE, default=False): cv.boolean,
+})
+
+GENERATE_RECORDER_REPORT_SCHEMA = vol.Schema({
+    vol.Optional(ATTR_LIMIT, default=100): vol.All(int, vol.Range(min=1, max=1000)),
+    vol.Optional(ATTR_DAYS_BACK, default=30): vol.All(int, vol.Range(min=1, max=365)),
 })
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -156,7 +174,21 @@ async def register_services(hass: HomeAssistant, manager):
         """Handle reload config service."""
         await manager.load_config()
     
-    # Registrar os serviços
+    # NOVOS HANDLERS
+    async def handle_intelligent_purge(call: ServiceCall):
+        """Handle intelligent purge service."""
+        force_purge = call.data.get(ATTR_FORCE_PURGE, False)
+        result = await manager.intelligent_purge(force_purge)
+        _LOGGER.info("Intelligent purge completed: %s", result)
+    
+    async def handle_generate_recorder_report(call: ServiceCall):
+        """Handle generate recorder report service."""
+        limit = call.data.get(ATTR_LIMIT, 100)
+        days_back = call.data.get(ATTR_DAYS_BACK, 30)
+        result = await manager.generate_recorder_report(limit, days_back)
+        _LOGGER.info("Recorder report generated: %s", result)
+    
+    # Registrar os serviços existentes
     hass.services.async_register(
         DOMAIN, SERVICE_UPDATE_ENTITY_STATE, handle_update_entity_state, UPDATE_ENTITY_STATE_SCHEMA
     )
@@ -185,7 +217,16 @@ async def register_services(hass: HomeAssistant, manager):
         DOMAIN, SERVICE_RELOAD_CONFIG, handle_reload_config
     )
     
-    _LOGGER.info("Entity Manager services registered successfully")
+    # REGISTRAR NOVOS SERVIÇOS
+    hass.services.async_register(
+        DOMAIN, SERVICE_INTELLIGENT_PURGE, handle_intelligent_purge, INTELLIGENT_PURGE_SCHEMA
+    )
+    
+    hass.services.async_register(
+        DOMAIN, SERVICE_GENERATE_RECORDER_REPORT, handle_generate_recorder_report, GENERATE_RECORDER_REPORT_SCHEMA
+    )
+    
+    _LOGGER.info("Entity Manager services registered successfully (including new services)")
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
@@ -197,6 +238,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.services.async_remove(DOMAIN, SERVICE_BULK_DELETE)
     hass.services.async_remove(DOMAIN, SERVICE_PURGE_RECORDER)
     hass.services.async_remove(DOMAIN, SERVICE_RELOAD_CONFIG)
+    
+    # Remover novos serviços
+    hass.services.async_remove(DOMAIN, SERVICE_INTELLIGENT_PURGE)
+    hass.services.async_remove(DOMAIN, SERVICE_GENERATE_RECORDER_REPORT)
     
     unload_ok = await hass.config_entries.async_forward_entry_unload(entry, "sensor")
     if unload_ok:
@@ -424,32 +469,35 @@ class EntityManager:
                 # Se não especificado, usar todas as entidades configuradas
                 entity_ids = list(self._config.keys())
             
-            # Aqui você pode implementar a lógica para limpar dados do recorder
-            # Por exemplo, chamando o serviço do recorder do HA
+            # Agrupar entidades por dias para eficiência
+            entities_by_days = {}
+            
             for entity_id in entity_ids:
                 recorder_days = self._config.get(entity_id, {}).get("recorder_days", DEFAULT_RECORDER_DAYS)
                 
                 if recorder_days == 0 and not force_purge:
                     continue  # Pular entidades com 0 dias a menos que force_purge seja True
                 
-                # Calcular data de corte
-                cutoff_date = datetime.now() - timedelta(days=recorder_days)
-                
-                # Chamar serviço do recorder para purgar (se disponível)
+                if recorder_days not in entities_by_days:
+                    entities_by_days[recorder_days] = []
+                entities_by_days[recorder_days].append(entity_id)
+            
+            # Executar purge agrupado
+            for days, entity_list in entities_by_days.items():
                 try:
                     await self.hass.services.async_call(
                         "recorder", 
-                        "purge", 
+                        "purge_entities",  # ← COMANDO CORRETO!
                         {
-                            "keep_days": recorder_days,
-                            "repack": False,
-                            "apply_filter": True
+                            "entity_id": entity_list,
+                            "keep_days": days
                         }
                     )
+                    _LOGGER.info("Purged %d entities with %d days retention", len(entity_list), days)
                 except Exception as purge_error:
-                    _LOGGER.warning("Could not call recorder purge service: %s", purge_error)
+                    _LOGGER.warning("Could not purge entities with %d days: %s", days, purge_error)
             
-            _LOGGER.info("Purged recorder data for %d entities", len(entity_ids))
+            _LOGGER.info("Purged recorder data for %d entities in %d groups", len(entity_ids), len(entities_by_days))
             
         except Exception as e:
             _LOGGER.error("Error purging recorder data: %s", e)
