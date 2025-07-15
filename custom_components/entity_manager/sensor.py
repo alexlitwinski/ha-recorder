@@ -8,7 +8,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.entity_registry import async_get as async_get_entity_registry
 
-from .const import DOMAIN
+# CORREÇÃO: Importar a constante que estava faltando
+from .const import DOMAIN, DEFAULT_RECORDER_DAYS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -52,7 +53,6 @@ class EntityManagerSensor(SensorEntity):
         """Update the sensor."""
         await self._manager.load_config()
         
-        # AQUI ESTÁ A CORREÇÃO: remoção do 'await'
         entity_registry = async_get_entity_registry(self.hass)
         
         total_entities = len(entity_registry.entities)
@@ -79,8 +79,8 @@ class EntityManagerSensor(SensorEntity):
         disabled_entities_count = total_entities - enabled_entities_count
         
         recorder_config: Dict[str, int] = {}
-        for config in self._manager._config.values():
-            days = config.get('recorder_days', DEFAULT_RECORDER_DAYS)
+        for entity_id, config in self._manager._config.items():
+            days = config.get('recorder_days', DEFAULT_RECORDER_DAYS) # Esta linha agora funciona
             key = f"entities_with_{days}_days"
             recorder_config[key] = recorder_config.get(key, 0) + 1
         

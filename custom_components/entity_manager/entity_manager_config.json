@@ -2,5 +2,12 @@
   "switch.adguard_home_controle_dos_pais": {
     "recorder_days": 10,
     "enabled": true
+  },
+  "sensor.terminal_ssh_cpu_percent": {
+    "recorder_days": 2,
+    "enabled": false
+  },
+  "sensor.filebrowser_cpu_percent": {
+    "enabled": false
   }
 }
