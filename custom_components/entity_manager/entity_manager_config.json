@@ -120,7 +120,8 @@
     "recorder_days": 10
   },
   "automation.reinicio_diario_do_home_assistant": {
-    "recorder_days": 10
+    "recorder_days": 10,
+    "recorder_exclude": false
   },
   "sun.sun": {
     "recorder_days": 10
