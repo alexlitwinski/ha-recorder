@@ -24,9 +24,14 @@ def setup_api(hass: HomeAssistant) -> None:
         hass.http.register_view(EntityManagerPanelView)
         hass.http.register_view(EntityManagerStatusView)
         
-        # Novos endpoints
+        # Endpoints existentes
         hass.http.register_view(EntityManagerIntelligentPurgeView)
         hass.http.register_view(EntityManagerRecorderReportView)
+        
+        # Novos endpoints
+        hass.http.register_view(EntityManagerUpdateRecorderConfigView)
+        hass.http.register_view(EntityManagerPurgeAllEntitiesView)
+        hass.http.register_view(EntityManagerBulkUpdateRecorderExcludeView)
         
         _LOGGER.info("Entity Manager API views registered successfully")
         
@@ -151,7 +156,6 @@ class EntityManagerRecorderReportView(HomeAssistantView):
             
             result = await manager.generate_recorder_report(limit, days_back)
             
-            # Modificado: Adicionar a lista de entidades do relatório na resposta
             if result.get("report_file"):
                 download_url = f"/local/{result['report_file']}"
                 
@@ -161,7 +165,7 @@ class EntityManagerRecorderReportView(HomeAssistantView):
                     "total_records": result.get("total_records"),
                     "report_file": result.get("report_file"),
                     "download_url": download_url,
-                    "report_data": result.get("report_data", [])  # Adicionado
+                    "report_data": result.get("report_data", [])
                 }
                 
                 if result.get("status") == "error":
@@ -176,6 +180,105 @@ class EntityManagerRecorderReportView(HomeAssistantView):
             return web.Response(text=json.dumps({"error": str(e)}), status=500, content_type="application/json")
 
 
+class EntityManagerUpdateRecorderConfigView(HomeAssistantView):
+    """View to update recorder configuration."""
+    
+    url = "/api/entity_manager/update_recorder_config"
+    name = "api:entity_manager:update_recorder_config"
+    requires_auth = True
+    
+    async def post(self, request: web.Request) -> web.Response:
+        """Update recorder configuration with excluded entities."""
+        hass = request.app["hass"]
+        manager = hass.data.get(DOMAIN)
+        
+        if not manager:
+            return web.Response(text=json.dumps({"error": "Entity Manager not initialized"}), status=500, content_type="application/json")
+        
+        try:
+            data = await request.json()
+            backup_config = data.get("backup_config", True)
+            
+            _LOGGER.info("API: Updating recorder configuration (backup=%s)", backup_config)
+            
+            result = await manager.update_recorder_config(backup_config)
+            return web.Response(text=json.dumps(result), content_type="application/json")
+            
+        except Exception as e:
+            _LOGGER.error("API: Error updating recorder configuration: %s", e, exc_info=True)
+            return web.Response(text=json.dumps({"error": str(e)}), status=500, content_type="application/json")
+
+
+class EntityManagerPurgeAllEntitiesView(HomeAssistantView):
+    """View to execute purge_entities."""
+    
+    url = "/api/entity_manager/purge_all_entities"
+    name = "api:entity_manager:purge_all_entities"
+    requires_auth = True
+    
+    async def post(self, request: web.Request) -> web.Response:
+        """Execute recorder.purge_entities service."""
+        hass = request.app["hass"]
+        manager = hass.data.get(DOMAIN)
+        
+        if not manager:
+            return web.Response(text=json.dumps({"error": "Entity Manager not initialized"}), status=500, content_type="application/json")
+        
+        try:
+            data = await request.json()
+            force_purge = data.get("force_purge", False)
+            
+            _LOGGER.info("API: Executing purge_all_entities (force=%s)", force_purge)
+            
+            result = await manager.purge_all_entities(force_purge)
+            return web.Response(text=json.dumps(result), content_type="application/json")
+            
+        except Exception as e:
+            _LOGGER.error("API: Error executing purge_all_entities: %s", e, exc_info=True)
+            return web.Response(text=json.dumps({"error": str(e)}), status=500, content_type="application/json")
+
+
+class EntityManagerBulkUpdateRecorderExcludeView(HomeAssistantView):
+    """View to bulk update recorder exclude setting."""
+    
+    url = "/api/entity_manager/bulk_update_recorder_exclude"
+    name = "api:entity_manager:bulk_update_recorder_exclude"
+    requires_auth = True
+    
+    async def post(self, request: web.Request) -> web.Response:
+        """Bulk update entities recorder exclude setting."""
+        hass = request.app["hass"]
+        manager = hass.data.get(DOMAIN)
+        
+        if not manager:
+            return web.Response(text=json.dumps({"error": "Entity Manager not initialized"}), status=500, content_type="application/json")
+        
+        try:
+            data = await request.json()
+            entity_ids = data.get("entity_ids", [])
+            recorder_exclude = data.get("recorder_exclude", False)
+            
+            if not entity_ids:
+                return web.Response(text=json.dumps({"error": "No entity_ids provided"}), status=400, content_type="application/json")
+            
+            _LOGGER.info("API: Bulk updating recorder exclude for %d entities: %s", len(entity_ids), recorder_exclude)
+            
+            await manager.bulk_update_recorder_exclude(entity_ids, recorder_exclude)
+            
+            result = {
+                "success": True,
+                "message": f"Updated recorder_exclude for {len(entity_ids)} entities",
+                "entity_count": len(entity_ids),
+                "recorder_exclude": recorder_exclude
+            }
+            
+            return web.Response(text=json.dumps(result), content_type="application/json")
+            
+        except Exception as e:
+            _LOGGER.error("API: Error bulk updating recorder exclude: %s", e, exc_info=True)
+            return web.Response(text=json.dumps({"error": str(e)}), status=500, content_type="application/json")
+
+
 class EntityManagerPanelView(HomeAssistantView):
     """View to serve the Entity Manager panel."""
     
@@ -185,5 +288,5 @@ class EntityManagerPanelView(HomeAssistantView):
     
     async def get(self, request: web.Request) -> web.Response:
         """Serve the Entity Manager panel."""
-        # ... (código inalterado)
+        # Implementação simplificada
         return web.Response(text="Panel HTML would be here", content_type="text/html")

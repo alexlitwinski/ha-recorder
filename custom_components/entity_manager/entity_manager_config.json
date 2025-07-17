@@ -12,7 +12,8 @@
   },
   "sensor.mosquitto_broker_cpu_percent": {
     "recorder_days": 10,
-    "enabled": true
+    "enabled": false,
+    "recorder_exclude": true
   },
   "sensor.rclone_backup_cpu_percent": {
     "recorder_days": 10,

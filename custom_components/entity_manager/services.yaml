@@ -141,6 +141,67 @@ generate_recorder_report:
           max: 365
           step: 1
 
+# NOVOS SERVIÇOS
+
+update_recorder_exclude:
+  name: Atualizar Exclusão do Recorder
+  description: Marca ou desmarca uma entidade para exclusão do recorder
+  fields:
+    entity_id:
+      name: ID da Entidade
+      description: ID da entidade a ser atualizada
+      required: true
+      selector:
+        entity:
+    recorder_exclude:
+      name: Excluir do Recorder
+      description: Se a entidade deve ser excluída do recorder
+      required: true
+      selector:
+        boolean:
+
+bulk_update_recorder_exclude:
+  name: Atualização em Lote - Exclusão do Recorder
+  description: Marca ou desmarca múltiplas entidades para exclusão do recorder
+  fields:
+    entity_ids:
+      name: IDs das Entidades
+      description: Lista de entidades a serem atualizadas
+      required: true
+      selector:
+        entity:
+          multiple: true
+    recorder_exclude:
+      name: Excluir do Recorder
+      description: Se as entidades devem ser excluídas do recorder
+      required: true
+      selector:
+        boolean:
+
+update_recorder_config:
+  name: Atualizar Configuração do Recorder
+  description: Atualiza o configuration.yaml com entidades excluídas do recorder
+  fields:
+    backup_config:
+      name: Fazer Backup
+      description: Criar backup do configuration.yaml antes de atualizar
+      required: false
+      default: true
+      selector:
+        boolean:
+
+purge_all_entities:
+  name: Limpar Todas as Entidades
+  description: Executa recorder.purge_entities para entidades marcadas para exclusão
+  fields:
+    force_purge:
+      name: Forçar Limpeza
+      description: Força a limpeza mesmo sem entidades marcadas
+      required: false
+      default: false
+      selector:
+        boolean:
+
 reload_config:
   name: Recarregar Configuração
   description: Recarrega a configuração do arquivo

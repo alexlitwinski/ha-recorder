@@ -8,10 +8,15 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.entity_registry import async_get as async_get_entity_registry
 
-# CORREÇÃO: Importar a constante que estava faltando
-from .const import DOMAIN, DEFAULT_RECORDER_DAYS
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
+
+# Definir DEFAULT_RECORDER_DAYS aqui se não existir em const.py
+try:
+    from .const import DEFAULT_RECORDER_DAYS
+except ImportError:
+    DEFAULT_RECORDER_DAYS = 10
 
 
 async def async_setup_entry(
@@ -59,6 +64,7 @@ class EntityManagerSensor(SensorEntity):
         managed_entities = len(self._manager._config)
         
         enabled_entities_count = 0
+        excluded_entities_count = 0
         domains: Dict[str, int] = {}
         states: Dict[str, int] = {}
 
@@ -70,7 +76,7 @@ class EntityManagerSensor(SensorEntity):
             domains[domain] = domains.get(domain, 0) + 1
 
             state_obj = self.hass.states.get(entity.entity_id)
-            state_val = "not_provided"
+            state_val = "disabled" if entity.disabled_by else "not_provided"
             if state_obj:
                 state_val = state_obj.state
             
@@ -78,9 +84,14 @@ class EntityManagerSensor(SensorEntity):
             
         disabled_entities_count = total_entities - enabled_entities_count
         
+        # Contar entidades excluídas do recorder
+        for entity_id, config in self._manager._config.items():
+            if config.get('recorder_exclude', False):
+                excluded_entities_count += 1
+        
         recorder_config: Dict[str, int] = {}
         for entity_id, config in self._manager._config.items():
-            days = config.get('recorder_days', DEFAULT_RECORDER_DAYS) # Esta linha agora funciona
+            days = config.get('recorder_days', DEFAULT_RECORDER_DAYS)
             key = f"entities_with_{days}_days"
             recorder_config[key] = recorder_config.get(key, 0) + 1
         
@@ -89,6 +100,7 @@ class EntityManagerSensor(SensorEntity):
             "managed_entities": managed_entities,
             "enabled_entities": enabled_entities_count,
             "disabled_entities": disabled_entities_count,
+            "excluded_recorder_entities": excluded_entities_count,
             "domains": domains,
             "states": states,
             "recorder_config": recorder_config,

@@ -1,25 +1,6 @@
-# NOVOS SCHEMAS
-UPDATE_RECORDER_EXCLUDE_SCHEMA = vol.Schema({
-    vol.Required(ATTR_ENTITY_ID): cv.entity_id,
-    vol.Required(ATTR_RECORDER_EXCLUDE): cv.boolean,
-})
-
-BULK_UPDATE_RECORDER_EXCLUDE_SCHEMA = vol.Schema({
-    vol.Required(ATTR_ENTITY_IDS): cv.entity_ids,
-    vol.Required(ATTR_RECORDER_EXCLUDE): cv.boolean,
-})
-
-UPDATE_RECORDER_CONFIG_SCHEMA = vol.Schema({
-    vol.Optional(ATTR_BACKUP_CONFIG, default=True): cv.boolean,
-})
-
-INTELLIGENT_PURGE_SCHEMA = vol.Schema({
-    vol.Optional(ATTR_FORCE_PURGE, default=False): cv.boolean,
-})
-
-GENERATE_RECORDER_REPORT_SCHEMA = vol.Schema({
-    vol.Optional(ATTR_LIMIT, default=100): vol.All(int, vol.Range(min=1, max=1000)),
-    vol.O"""Constants for Entity Manager integration."""
+"""Constants for Entity Manager integration."""
+import voluptuous as vol
+import homeassistant.helpers.config_validation as cv
 
 DOMAIN = "entity_manager"
 
@@ -67,3 +48,31 @@ EVENT_ENTITY_MANAGER_UPDATED = "entity_manager_updated"
 # Recorder config
 RECORDER_CONFIG_PATH = "configuration.yaml"
 RECORDER_CONFIG_BACKUP_PATH = "configuration.yaml.entity_manager_backup"
+
+# SCHEMAS
+UPDATE_RECORDER_EXCLUDE_SCHEMA = vol.Schema({
+    vol.Required(ATTR_ENTITY_ID): cv.entity_id,
+    vol.Required(ATTR_RECORDER_EXCLUDE): cv.boolean,
+})
+
+BULK_UPDATE_RECORDER_EXCLUDE_SCHEMA = vol.Schema({
+    vol.Required(ATTR_ENTITY_IDS): cv.entity_ids,
+    vol.Required(ATTR_RECORDER_EXCLUDE): cv.boolean,
+})
+
+UPDATE_RECORDER_CONFIG_SCHEMA = vol.Schema({
+    vol.Optional(ATTR_BACKUP_CONFIG, default=True): cv.boolean,
+})
+
+INTELLIGENT_PURGE_SCHEMA = vol.Schema({
+    vol.Optional(ATTR_FORCE_PURGE, default=False): cv.boolean,
+})
+
+GENERATE_RECORDER_REPORT_SCHEMA = vol.Schema({
+    vol.Optional(ATTR_LIMIT, default=100): vol.All(int, vol.Range(min=1, max=1000)),
+    vol.Optional(ATTR_DAYS_BACK, default=30): vol.All(int, vol.Range(min=1, max=365)),
+})
+
+PURGE_ALL_ENTITIES_SCHEMA = vol.Schema({
+    vol.Optional(ATTR_FORCE_PURGE, default=False): cv.boolean,
+})
