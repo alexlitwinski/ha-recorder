@@ -1,4 +1,25 @@
-"""Constants for Entity Manager integration."""
+# NOVOS SCHEMAS
+UPDATE_RECORDER_EXCLUDE_SCHEMA = vol.Schema({
+    vol.Required(ATTR_ENTITY_ID): cv.entity_id,
+    vol.Required(ATTR_RECORDER_EXCLUDE): cv.boolean,
+})
+
+BULK_UPDATE_RECORDER_EXCLUDE_SCHEMA = vol.Schema({
+    vol.Required(ATTR_ENTITY_IDS): cv.entity_ids,
+    vol.Required(ATTR_RECORDER_EXCLUDE): cv.boolean,
+})
+
+UPDATE_RECORDER_CONFIG_SCHEMA = vol.Schema({
+    vol.Optional(ATTR_BACKUP_CONFIG, default=True): cv.boolean,
+})
+
+INTELLIGENT_PURGE_SCHEMA = vol.Schema({
+    vol.Optional(ATTR_FORCE_PURGE, default=False): cv.boolean,
+})
+
+GENERATE_RECORDER_REPORT_SCHEMA = vol.Schema({
+    vol.Optional(ATTR_LIMIT, default=100): vol.All(int, vol.Range(min=1, max=1000)),
+    vol.O"""Constants for Entity Manager integration."""
 
 DOMAIN = "entity_manager"
 
@@ -22,6 +43,10 @@ SERVICE_BULK_DELETE = "bulk_delete"
 # Novos serviços
 SERVICE_INTELLIGENT_PURGE = "intelligent_purge"
 SERVICE_GENERATE_RECORDER_REPORT = "generate_recorder_report"
+SERVICE_UPDATE_RECORDER_EXCLUDE = "update_recorder_exclude"
+SERVICE_BULK_UPDATE_RECORDER_EXCLUDE = "bulk_update_recorder_exclude"
+SERVICE_UPDATE_RECORDER_CONFIG = "update_recorder_config"
+SERVICE_PURGE_ALL_ENTITIES = "purge_all_entities"
 
 # Attributes
 ATTR_ENTITY_ID = "entity_id"
@@ -29,6 +54,8 @@ ATTR_ENTITY_IDS = "entity_ids"
 ATTR_ENABLED = "enabled"
 ATTR_RECORDER_DAYS = "recorder_days"
 ATTR_FORCE_PURGE = "force_purge"
+ATTR_RECORDER_EXCLUDE = "recorder_exclude"
+ATTR_BACKUP_CONFIG = "backup_config"
 
 # Novos atributos
 ATTR_LIMIT = "limit"
@@ -36,3 +63,7 @@ ATTR_DAYS_BACK = "days_back"
 
 # Events
 EVENT_ENTITY_MANAGER_UPDATED = "entity_manager_updated"
+
+# Recorder config
+RECORDER_CONFIG_PATH = "configuration.yaml"
+RECORDER_CONFIG_BACKUP_PATH = "configuration.yaml.entity_manager_backup"

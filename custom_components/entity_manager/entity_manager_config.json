@@ -9,5 +9,350 @@
   },
   "sensor.filebrowser_cpu_percent": {
     "enabled": false
+  },
+  "sensor.mosquitto_broker_cpu_percent": {
+    "recorder_days": 10,
+    "enabled": true
+  },
+  "sensor.rclone_backup_cpu_percent": {
+    "recorder_days": 10,
+    "enabled": false
+  },
+  "sensor.home_assistant_google_drive_backup_cpu_percent": {
+    "recorder_days": 10
+  },
+  "sensor.let_s_encrypt_cpu_percent": {
+    "recorder_days": 10
+  },
+  "sensor.adguard_home_porcentagem_de_cpu": {
+    "recorder_days": 10
+  },
+  "sensor.node_red_cpu_percent": {
+    "recorder_days": 10
+  },
+  "sensor.home_assistant_core_cpu_percent": {
+    "recorder_days": 10
+  },
+  "sensor.home_assistant_supervisor_cpu_percent": {
+    "recorder_days": 10
+  },
+  "update.home_assistant_supervisor_update": {
+    "recorder_days": 10
+  },
+  "update.home_assistant_core_update": {
+    "recorder_days": 10
+  },
+  "update.terminal_ssh_update": {
+    "recorder_days": 10
+  },
+  "update.filebrowser_update": {
+    "recorder_days": 10
+  },
+  "update.mosquitto_broker_update": {
+    "recorder_days": 10
+  },
+  "update.rclone_backup_update": {
+    "recorder_days": 10,
+    "enabled": false
+  },
+  "update.home_assistant_google_drive_backup_update": {
+    "recorder_days": 10
+  },
+  "update.let_s_encrypt_update": {
+    "recorder_days": 10
+  },
+  "update.adguard_home_update": {
+    "recorder_days": 10
+  },
+  "update.cloudflared_update": {
+    "recorder_days": 10
+  },
+  "update.motioneye_update": {
+    "recorder_days": 10
+  },
+  "update.frigate_full_access_update": {
+    "recorder_days": 10
+  },
+  "update.node_red_update": {
+    "recorder_days": 10
+  },
+  "update.silicon_labs_flasher_update": {
+    "recorder_days": 10
+  },
+  "update.zigbee2mqtt_update": {
+    "recorder_days": 10
+  },
+  "update.sqlite_web_update": {
+    "recorder_days": 10
+  },
+  "update.home_assistant_operating_system_update": {
+    "recorder_days": 10
+  },
+  "conversation.home_assistant": {
+    "recorder_days": 10
+  },
+  "event.backup_automatic_backup": {
+    "recorder_days": 10
+  },
+  "sensor.backup_backup_manager_state": {
+    "recorder_days": 10
+  },
+  "sensor.backup_next_scheduled_automatic_backup": {
+    "recorder_days": 10
+  },
+  "sensor.backup_last_successful_automatic_backup": {
+    "recorder_days": 10
+  },
+  "sensor.backup_ultimo_backup_automatico_criado": {
+    "recorder_days": 10
+  },
+  "zone.home": {
+    "recorder_days": 10
+  },
+  "person.alexandre_litwinski": {
+    "recorder_days": 10
+  },
+  "person.mqtt": {
+    "recorder_days": 10
+  },
+  "input_boolean.teste": {
+    "recorder_days": 10
+  },
+  "automation.reinicio_diario_do_home_assistant": {
+    "recorder_days": 10
+  },
+  "sun.sun": {
+    "recorder_days": 10
+  },
+  "sensor.sun_next_dawn": {
+    "recorder_days": 10
+  },
+  "sensor.sun_next_dusk": {
+    "recorder_days": 10
+  },
+  "sensor.sun_next_midnight": {
+    "recorder_days": 10
+  },
+  "sensor.sun_next_noon": {
+    "recorder_days": 10
+  },
+  "sensor.sun_next_rising": {
+    "recorder_days": 10
+  },
+  "sensor.sun_next_setting": {
+    "recorder_days": 10
+  },
+  "binary_sensor.sm_f926b_is_charging": {
+    "recorder_days": 10
+  },
+  "device_tracker.sm_f926b": {
+    "recorder_days": 10
+  },
+  "sensor.sm_f926b_battery_level": {
+    "recorder_days": 10
+  },
+  "sensor.sm_f926b_battery_state": {
+    "recorder_days": 10
+  },
+  "sensor.sm_f926b_charger_type": {
+    "recorder_days": 10
+  },
+  "sensor.sm_f926b_battery_health": {
+    "recorder_days": 10
+  },
+  "sensor.sm_f926b_battery_temperature": {
+    "recorder_days": 10
+  },
+  "sensor.sm_f926b_battery_power": {
+    "recorder_days": 10
+  },
+  "device_tracker.sm_s928b": {
+    "recorder_days": 10
+  },
+  "sensor.sm_s928b_sleep_confidence": {
+    "recorder_days": 10
+  },
+  "sensor.sm_s928b_sleep_segment": {
+    "recorder_days": 10
+  },
+  "sensor.sm_s928b_battery_level": {
+    "recorder_days": 10
+  },
+  "sensor.sm_s928b_battery_state": {
+    "recorder_days": 10
+  },
+  "sensor.sm_s928b_charger_type": {
+    "recorder_days": 10
+  },
+  "sensor.sm_s928b_geocoded_location": {
+    "recorder_days": 10
+  },
+  "sensor.sm_s928b_detected_activity": {
+    "recorder_days": 10
+  },
+  "sensor.adguard_home_consultas_de_dns": {
+    "recorder_days": 10
+  },
+  "switch.adguard_home_protecao": {
+    "recorder_days": 10
+  },
+  "switch.adguard_home_pesquisa_segura": {
+    "recorder_days": 10
+  },
+  "switch.adguard_home_navegacao_segura": {
+    "recorder_days": 10
+  },
+  "switch.adguard_home_filtragem": {
+    "recorder_days": 10
+  },
+  "sensor.adguard_home_navegacao_segura_bloqueada": {
+    "recorder_days": 10
+  },
+  "switch.adguard_home_log_de_consulta": {
+    "recorder_days": 10
+  },
+  "sensor.adguard_home_consultas_de_dns_bloqueadas": {
+    "recorder_days": 10
+  },
+  "sensor.adguard_home_taxa_de_bloqueio_de_consultas_dns": {
+    "recorder_days": 10
+  },
+  "sensor.adguard_home_controle_dos_pais_bloqueado": {
+    "recorder_days": 10
+  },
+  "sensor.adguard_home_buscas_seguras_aplicadas": {
+    "recorder_days": 10
+  },
+  "sensor.adguard_home_velocidade_media_de_processamento": {
+    "recorder_days": 10
+  },
+  "sensor.entity_manager_stats": {
+    "recorder_days": 10
+  },
+  "sensor.disk_use_percent_config": {
+    "recorder_days": 10
+  },
+  "sensor.last_boot": {
+    "recorder_days": 10
+  },
+  "sensor.load_15m": {
+    "recorder_days": 10
+  },
+  "sensor.load_1m": {
+    "recorder_days": 10
+  },
+  "sensor.load_5m": {
+    "recorder_days": 10
+  },
+  "sensor.memory_free": {
+    "recorder_days": 10
+  },
+  "sensor.memory_use_percent": {
+    "recorder_days": 10
+  },
+  "sensor.network_in_enp2s0": {
+    "recorder_days": 10
+  },
+  "sensor.network_out_enp2s0": {
+    "recorder_days": 10
+  },
+  "sensor.network_throughput_in_enp2s0": {
+    "recorder_days": 10
+  },
+  "sensor.network_throughput_out_enp2s0": {
+    "recorder_days": 10
+  },
+  "sensor.processor_use": {
+    "recorder_days": 10
+  },
+  "sensor.processor_temperature": {
+    "recorder_days": 10
+  },
+  "sensor.swap_use_percent": {
+    "recorder_days": 10
+  },
+  "sensor.h5074_0405_temperature": {
+    "recorder_days": 10
+  },
+  "sensor.h5074_0405_humidity": {
+    "recorder_days": 10
+  },
+  "sensor.h5074_0405_battery": {
+    "recorder_days": 10
+  },
+  "update.auto_entities_update": {
+    "recorder_days": 10
+  },
+  "update.flexible_horseshoe_card_for_lovelace_update": {
+    "recorder_days": 10
+  },
+  "update.tuya_ble_update": {
+    "recorder_days": 10
+  },
+  "update.remote_home_assistant_update": {
+    "recorder_days": 10
+  },
+  "update.hacs_update": {
+    "recorder_days": 10
+  },
+  "update.amt_8000_update_4": {
+    "recorder_days": 10
+  },
+  "update.jokes_update": {
+    "recorder_days": 10
+  },
+  "update.ha_recorder_manager_update": {
+    "recorder_days": 10
+  },
+  "update.local_tuya_update": {
+    "recorder_days": 10
+  },
+  "update.tuya_monitor_update": {
+    "recorder_days": 10
+  },
+  "update.tuya_local_update": {
+    "recorder_days": 10
+  },
+  "update.webrtc_camera_update": {
+    "recorder_days": 10
+  },
+  "update.frigate_update": {
+    "recorder_days": 10
+  },
+  "sensor.pasta_frigate": {
+    "recorder_days": 10
+  },
+  "sensor.speedtest_ping": {
+    "recorder_days": 10
+  },
+  "sensor.speedtest_download": {
+    "recorder_days": 10
+  },
+  "sensor.speedtest_upload": {
+    "recorder_days": 10
+  },
+  "sensor.imap_alexandre_litwinski_com_br": {
+    "recorder_days": 10
+  },
+  "sensor.cpu_speed": {
+    "recorder_days": 10
+  },
+  "sensor.onedrive_armazenamento_total_disponivel": {
+    "recorder_days": 10
+  },
+  "sensor.onedrive_armazenamento_usado": {
+    "recorder_days": 10
+  },
+  "sensor.onedrive_armazenamento_restante": {
+    "recorder_days": 10
+  },
+  "sensor.onedrive_estado_da_unidade": {
+    "recorder_days": 10
+  },
+  "binary_sensor.backups_stale": {
+    "recorder_days": 10
+  },
+  "sensor.backup_state": {
+    "recorder_days": 10
   }
 }
