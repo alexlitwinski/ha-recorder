@@ -141,7 +141,7 @@ generate_recorder_report:
           max: 365
           step: 1
 
-# NOVOS SERVIÇOS
+# EXISTING SERVICES
 
 update_recorder_exclude:
   name: Atualizar Exclusão do Recorder
@@ -180,11 +180,11 @@ bulk_update_recorder_exclude:
 
 update_recorder_config:
   name: Atualizar Configuração do Recorder
-  description: Atualiza o configuration.yaml com entidades excluídas do recorder
+  description: Cria/atualiza o arquivo recorder.yaml com configuração completa de domínios e entidades
   fields:
     backup_config:
       name: Fazer Backup
-      description: Criar backup do configuration.yaml antes de atualizar
+      description: Criar backup dos arquivos antes de atualizar
       required: false
       default: true
       selector:
@@ -202,6 +202,296 @@ purge_all_entities:
       selector:
         boolean:
 
+# UPDATED DOMAIN SERVICES
+
+exclude_domain:
+  name: Excluir Domínio do Recorder
+  description: Configura um domínio completo para exclusão do recorder com opção de definir dias de retenção
+  fields:
+    domain:
+      name: Domínio
+      description: Nome do domínio a ser configurado (ex. sensor, light, automation, etc.)
+      required: true
+      selector:
+        select:
+          options:
+            - sensor
+            - binary_sensor
+            - light
+            - switch
+            - automation
+            - script
+            - scene
+            - device_tracker
+            - media_player
+            - climate
+            - cover
+            - fan
+            - lock
+            - camera
+            - vacuum
+            - input_boolean
+            - input_number
+            - input_select
+            - input_text
+            - input_datetime
+            - timer
+            - counter
+            - group
+            - zone
+            - person
+            - sun
+            - weather
+            - calendar
+            - notify
+            - tts
+            - alert
+            - plant
+          custom_value: true
+    recorder_exclude:
+      name: Excluir do Recorder
+      description: Se o domínio deve ser completamente excluído do recorder
+      required: false
+      default: true
+      selector:
+        boolean:
+    recorder_days:
+      name: Dias de Retenção
+      description: Número de dias para manter o histórico do domínio (apenas se não excluído)
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 730
+          step: 1
+
+include_domain:
+  name: Incluir Domínio no Recorder
+  description: Configura um domínio para inclusão no recorder com opção de definir dias de retenção
+  fields:
+    domain:
+      name: Domínio
+      description: Nome do domínio a ser incluído (ex. sensor, light, etc.)
+      required: true
+      selector:
+        select:
+          options:
+            - sensor
+            - binary_sensor
+            - light
+            - switch
+            - automation
+            - script
+            - scene
+            - device_tracker
+            - media_player
+            - climate
+            - cover
+            - fan
+            - lock
+            - camera
+            - vacuum
+            - input_boolean
+            - input_number
+            - input_select
+            - input_text
+            - input_datetime
+            - timer
+            - counter
+            - group
+            - zone
+            - person
+            - sun
+            - weather
+            - calendar
+            - notify
+            - tts
+            - alert
+            - plant
+          custom_value: true
+    recorder_days:
+      name: Dias de Retenção
+      description: Número de dias para manter o histórico do domínio (opcional)
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 730
+          step: 1
+
+bulk_exclude_domains:
+  name: Configurar Múltiplos Domínios
+  description: Configura múltiplos domínios para exclusão/inclusão no recorder com opção de definir dias de retenção
+  fields:
+    domains:
+      name: Domínios
+      description: Lista de domínios a serem configurados
+      required: true
+      selector:
+        select:
+          multiple: true
+          custom_value: true
+          options:
+            - sensor
+            - binary_sensor
+            - light
+            - switch
+            - automation
+            - script
+            - scene
+            - device_tracker
+            - media_player
+            - climate
+            - cover
+            - fan
+            - lock
+            - camera
+            - vacuum
+            - input_boolean
+            - input_number
+            - input_select
+            - input_text
+            - input_datetime
+            - timer
+            - counter
+            - group
+            - zone
+            - person
+            - sun
+            - weather
+            - calendar
+            - notify
+            - tts
+            - alert
+            - plant
+    recorder_exclude:
+      name: Excluir do Recorder
+      description: Se os domínios devem ser excluídos do recorder
+      required: false
+      default: true
+      selector:
+        boolean:
+    recorder_days:
+      name: Dias de Retenção
+      description: Número de dias para manter o histórico dos domínios (apenas se não excluídos)
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 730
+          step: 1
+
+# NEW DOMAIN RECORDER DAYS SERVICES
+
+update_domain_recorder_days:
+  name: Atualizar Dias de Retenção do Domínio
+  description: Define o número de dias de retenção para um domínio específico
+  fields:
+    domain:
+      name: Domínio
+      description: Nome do domínio a ser configurado
+      required: true
+      selector:
+        select:
+          options:
+            - sensor
+            - binary_sensor
+            - light
+            - switch
+            - automation
+            - script
+            - scene
+            - device_tracker
+            - media_player
+            - climate
+            - cover
+            - fan
+            - lock
+            - camera
+            - vacuum
+            - input_boolean
+            - input_number
+            - input_select
+            - input_text
+            - input_datetime
+            - timer
+            - counter
+            - group
+            - zone
+            - person
+            - sun
+            - weather
+            - calendar
+            - notify
+            - tts
+            - alert
+            - plant
+          custom_value: true
+    domain_recorder_days:
+      name: Dias de Retenção do Domínio
+      description: Número de dias para manter o histórico de todas as entidades do domínio
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 730
+          step: 1
+
+bulk_update_domain_recorder_days:
+  name: Atualizar Dias de Retenção - Múltiplos Domínios
+  description: Define o número de dias de retenção para múltiplos domínios
+  fields:
+    domains:
+      name: Domínios
+      description: Lista de domínios a serem configurados
+      required: true
+      selector:
+        select:
+          multiple: true
+          custom_value: true
+          options:
+            - sensor
+            - binary_sensor
+            - light
+            - switch
+            - automation
+            - script
+            - scene
+            - device_tracker
+            - media_player
+            - climate
+            - cover
+            - fan
+            - lock
+            - camera
+            - vacuum
+            - input_boolean
+            - input_number
+            - input_select
+            - input_text
+            - input_datetime
+            - timer
+            - counter
+            - group
+            - zone
+            - person
+            - sun
+            - weather
+            - calendar
+            - notify
+            - tts
+            - alert
+            - plant
+    domain_recorder_days:
+      name: Dias de Retenção do Domínio
+      description: Número de dias para manter o histórico de todas as entidades dos domínios selecionados
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 730
+          step: 1
+
 reload_config:
   name: Recarregar Configuração
-  description: Recarrega a configuração do arquivo
+  description: Recarrega as configurações do Entity Manager dos arquivos

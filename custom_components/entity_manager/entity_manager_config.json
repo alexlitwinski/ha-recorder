@@ -1,360 +1,1104 @@
 {
-  "switch.adguard_home_controle_dos_pais": {
-    "recorder_days": 10,
-    "enabled": true
-  },
-  "sensor.terminal_ssh_cpu_percent": {
-    "recorder_days": 2,
-    "enabled": false
-  },
-  "sensor.filebrowser_cpu_percent": {
-    "enabled": false
-  },
-  "sensor.mosquitto_broker_cpu_percent": {
-    "recorder_days": 10,
-    "enabled": false,
+  "sensor.wlan0_rx_activity_20": {
     "recorder_exclude": true
   },
-  "sensor.rclone_backup_cpu_percent": {
-    "recorder_days": 10,
-    "enabled": false
+  "sensor.wlan0_rx_activity_21": {
+    "recorder_exclude": true
   },
-  "sensor.home_assistant_google_drive_backup_cpu_percent": {
-    "recorder_days": 10
+  "sensor.wlan0_rx_activity_22": {
+    "recorder_exclude": true
   },
-  "sensor.let_s_encrypt_cpu_percent": {
-    "recorder_days": 10
+  "sensor.wlan0_rx_activity_23": {
+    "recorder_exclude": true
   },
-  "sensor.adguard_home_porcentagem_de_cpu": {
-    "recorder_days": 10
+  "sensor.wlan0_rx_activity_24": {
+    "recorder_exclude": true
   },
-  "sensor.node_red_cpu_percent": {
-    "recorder_days": 10
+  "sensor.wlan0_rx_activity_25": {
+    "recorder_exclude": true
   },
-  "sensor.home_assistant_core_cpu_percent": {
-    "recorder_days": 10
+  "sensor.wlan0_rx_activity_26": {
+    "recorder_exclude": true
   },
-  "sensor.home_assistant_supervisor_cpu_percent": {
-    "recorder_days": 10
+  "sensor.wlan0_rx_activity_27": {
+    "recorder_exclude": true
   },
-  "update.home_assistant_supervisor_update": {
-    "recorder_days": 10
+  "sensor.wlan0_rx_activity_28": {
+    "recorder_exclude": true
   },
-  "update.home_assistant_core_update": {
-    "recorder_days": 10
+  "sensor.wlan0_rx_activity_29": {
+    "recorder_exclude": true
   },
-  "update.terminal_ssh_update": {
-    "recorder_days": 10
+  "sensor.wlan0_rx_activity_3": {
+    "recorder_exclude": true
   },
-  "update.filebrowser_update": {
-    "recorder_days": 10
+  "sensor.wlan0_rx_activity_31": {
+    "recorder_exclude": true
   },
-  "update.mosquitto_broker_update": {
-    "recorder_days": 10
+  "sensor.wlan0_rx_activity_32": {
+    "recorder_exclude": true
   },
-  "update.rclone_backup_update": {
-    "recorder_days": 10,
-    "enabled": false
+  "sensor.wlan0_rx_activity_33": {
+    "recorder_exclude": true
   },
-  "update.home_assistant_google_drive_backup_update": {
-    "recorder_days": 10
+  "sensor.wlan0_rx_activity_34": {
+    "recorder_exclude": true
   },
-  "update.let_s_encrypt_update": {
-    "recorder_days": 10
+  "sensor.wlan0_rx_activity_35": {
+    "recorder_exclude": true
   },
-  "update.adguard_home_update": {
-    "recorder_days": 10
+  "sensor.wlan0_rx_activity_36": {
+    "recorder_exclude": true
   },
-  "update.cloudflared_update": {
-    "recorder_days": 10
+  "sensor.wlan0_rx_activity_37": {
+    "recorder_exclude": true
   },
-  "update.motioneye_update": {
-    "recorder_days": 10
+  "sensor.wlan0_rx_activity_38": {
+    "recorder_exclude": true
   },
-  "update.frigate_full_access_update": {
-    "recorder_days": 10
+  "sensor.wlan0_rx_activity_39": {
+    "recorder_exclude": true
   },
-  "update.node_red_update": {
-    "recorder_days": 10
+  "sensor.wlan0_rx_activity_4": {
+    "recorder_exclude": true
   },
-  "update.silicon_labs_flasher_update": {
-    "recorder_days": 10
+  "sensor.wlan0_rx_activity_40": {
+    "recorder_exclude": true
   },
-  "update.zigbee2mqtt_update": {
-    "recorder_days": 10
+  "sensor.wlan0_rx_activity_42": {
+    "recorder_exclude": true
   },
-  "update.sqlite_web_update": {
-    "recorder_days": 10
+  "sensor.wlan0_rx_activity_43": {
+    "recorder_exclude": true
   },
-  "update.home_assistant_operating_system_update": {
-    "recorder_days": 10
+  "sensor.wlan0_rx_activity_5": {
+    "recorder_exclude": true
   },
-  "conversation.home_assistant": {
-    "recorder_days": 10
+  "sensor.wlan0_rx_activity_6": {
+    "recorder_exclude": true
   },
-  "event.backup_automatic_backup": {
-    "recorder_days": 10
+  "sensor.wlan0_rx_activity_7": {
+    "recorder_exclude": true
   },
-  "sensor.backup_backup_manager_state": {
-    "recorder_days": 10
+  "sensor.wlan0_rx_activity_8": {
+    "recorder_exclude": true
   },
-  "sensor.backup_next_scheduled_automatic_backup": {
-    "recorder_days": 10
+  "sensor.wlan0_rx_activity_9": {
+    "recorder_exclude": true
   },
-  "sensor.backup_last_successful_automatic_backup": {
-    "recorder_days": 10
+  "sensor.wlan0_snr": {
+    "recorder_exclude": true
   },
-  "sensor.backup_ultimo_backup_automatico_criado": {
-    "recorder_days": 10
+  "sensor.wlan0_snr_10": {
+    "recorder_exclude": true
   },
-  "zone.home": {
-    "recorder_days": 10
+  "sensor.wlan0_snr_11": {
+    "recorder_exclude": true
   },
-  "person.alexandre_litwinski": {
-    "recorder_days": 10
+  "sensor.wlan0_snr_12": {
+    "recorder_exclude": true
   },
-  "person.mqtt": {
-    "recorder_days": 10
+  "sensor.wlan0_snr_13": {
+    "recorder_exclude": true
   },
-  "input_boolean.teste": {
-    "recorder_days": 10
+  "sensor.wlan0_snr_14": {
+    "recorder_exclude": true
   },
-  "automation.reinicio_diario_do_home_assistant": {
-    "recorder_days": 10,
+  "sensor.wlan0_snr_15": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_16": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_17": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_18": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_19": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_2": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_20": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_21": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_22": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_23": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_24": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_25": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_26": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_27": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_28": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_29": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_3": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_31": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_32": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_33": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_34": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_35": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_36": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_37": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_38": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_39": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_4": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_41": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_42": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_5": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_6": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_7": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_8": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_snr_9": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_tx_activity": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_tx_activity_10": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_tx_activity_11": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_tx_activity_12": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_tx_activity_13": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_tx_activity_14": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_tx_activity_15": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_tx_activity_16": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_tx_activity_17": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_tx_activity_18": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_tx_activity_19": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_tx_activity_2": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_tx_activity_20": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_tx_activity_21": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_tx_activity_22": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_tx_activity_23": {
+    "recorder_exclude": true
+  },
+  "sensor.wlan0_tx_activity_24": {
+    "recorder_exclude": true
+  },
+  "alarm_control_panel.amt_8000_partition_1": {
+    "recorder_days": 1,
     "recorder_exclude": false
   },
-  "sun.sun": {
-    "recorder_days": 10
+  "alarm_control_panel.amt_8000_partition_2": {
+    "recorder_days": 1,
+    "recorder_exclude": false
   },
-  "sensor.sun_next_dawn": {
-    "recorder_days": 10
+  "alarm_control_panel.amt_8000_partition_3": {
+    "recorder_days": 1,
+    "recorder_exclude": false
   },
-  "sensor.sun_next_dusk": {
-    "recorder_days": 10
+  "alarm_control_panel.amt_8000_partition_4": {
+    "recorder_days": 1,
+    "recorder_exclude": false
   },
-  "sensor.sun_next_midnight": {
-    "recorder_days": 10
+  "alarm_control_panel.amt_8000_partition_5": {
+    "recorder_days": 1
   },
-  "sensor.sun_next_noon": {
-    "recorder_days": 10
+  "binary_sensor.amt_8000_falha_na_conexao": {
+    "recorder_days": 3
   },
-  "sensor.sun_next_rising": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_1": {
+    "recorder_days": 3
   },
-  "sensor.sun_next_setting": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_10": {
+    "recorder_days": 3
   },
-  "binary_sensor.sm_f926b_is_charging": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_11": {
+    "recorder_days": 3
   },
-  "device_tracker.sm_f926b": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_12": {
+    "recorder_days": 3
   },
-  "sensor.sm_f926b_battery_level": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_13": {
+    "recorder_days": 3
   },
-  "sensor.sm_f926b_battery_state": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_14": {
+    "recorder_days": 3
   },
-  "sensor.sm_f926b_charger_type": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_15": {
+    "recorder_days": 3
   },
-  "sensor.sm_f926b_battery_health": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_16": {
+    "recorder_days": 3
   },
-  "sensor.sm_f926b_battery_temperature": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_17": {
+    "recorder_days": 3
   },
-  "sensor.sm_f926b_battery_power": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_18": {
+    "recorder_days": 3
   },
-  "device_tracker.sm_s928b": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_19": {
+    "recorder_days": 3
   },
-  "sensor.sm_s928b_sleep_confidence": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_2": {
+    "recorder_days": 3
   },
-  "sensor.sm_s928b_sleep_segment": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_20": {
+    "recorder_days": 3
   },
-  "sensor.sm_s928b_battery_level": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_21": {
+    "recorder_days": 3
   },
-  "sensor.sm_s928b_battery_state": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_22": {
+    "recorder_days": 3
   },
-  "sensor.sm_s928b_charger_type": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_23": {
+    "recorder_days": 3
   },
-  "sensor.sm_s928b_geocoded_location": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_24": {
+    "recorder_days": 3
   },
-  "sensor.sm_s928b_detected_activity": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_25": {
+    "recorder_days": 3
   },
-  "sensor.adguard_home_consultas_de_dns": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_26": {
+    "recorder_days": 3
   },
-  "switch.adguard_home_protecao": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_27": {
+    "recorder_days": 3
   },
-  "switch.adguard_home_pesquisa_segura": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_28": {
+    "recorder_days": 3
   },
-  "switch.adguard_home_navegacao_segura": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_29": {
+    "recorder_days": 3
   },
-  "switch.adguard_home_filtragem": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_3": {
+    "recorder_days": 3
   },
-  "sensor.adguard_home_navegacao_segura_bloqueada": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_30": {
+    "recorder_days": 3
   },
-  "switch.adguard_home_log_de_consulta": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_31": {
+    "recorder_days": 3
   },
-  "sensor.adguard_home_consultas_de_dns_bloqueadas": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_32": {
+    "recorder_days": 3
   },
-  "sensor.adguard_home_taxa_de_bloqueio_de_consultas_dns": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_33": {
+    "recorder_days": 3
   },
-  "sensor.adguard_home_controle_dos_pais_bloqueado": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_34": {
+    "recorder_days": 3
   },
-  "sensor.adguard_home_buscas_seguras_aplicadas": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_35": {
+    "recorder_days": 3
   },
-  "sensor.adguard_home_velocidade_media_de_processamento": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_36": {
+    "recorder_days": 3
   },
-  "sensor.entity_manager_stats": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_37": {
+    "recorder_days": 3
   },
-  "sensor.disk_use_percent_config": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_38": {
+    "recorder_days": 3
   },
-  "sensor.last_boot": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_39": {
+    "recorder_days": 3
   },
-  "sensor.load_15m": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_4": {
+    "recorder_days": 3
   },
-  "sensor.load_1m": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_40": {
+    "recorder_days": 3
   },
-  "sensor.load_5m": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_41": {
+    "recorder_days": 3
   },
-  "sensor.memory_free": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_42": {
+    "recorder_days": 3
   },
-  "sensor.memory_use_percent": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_43": {
+    "recorder_days": 3
   },
-  "sensor.network_in_enp2s0": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_44": {
+    "recorder_days": 3
   },
-  "sensor.network_out_enp2s0": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_45": {
+    "recorder_days": 3
   },
-  "sensor.network_throughput_in_enp2s0": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_46": {
+    "recorder_days": 3
   },
-  "sensor.network_throughput_out_enp2s0": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_47": {
+    "recorder_days": 3
   },
-  "sensor.processor_use": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_48": {
+    "recorder_days": 3
   },
-  "sensor.processor_temperature": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_49": {
+    "recorder_days": 3
   },
-  "sensor.swap_use_percent": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_5": {
+    "recorder_days": 3
   },
-  "sensor.h5074_0405_temperature": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_50": {
+    "recorder_days": 3
   },
-  "sensor.h5074_0405_humidity": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_51": {
+    "recorder_days": 3
   },
-  "sensor.h5074_0405_battery": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_52": {
+    "recorder_days": 3
   },
-  "update.auto_entities_update": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_53": {
+    "recorder_days": 3
   },
-  "update.flexible_horseshoe_card_for_lovelace_update": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_54": {
+    "recorder_days": 3
   },
-  "update.tuya_ble_update": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_55": {
+    "recorder_days": 3
   },
-  "update.remote_home_assistant_update": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_56": {
+    "recorder_days": 3
   },
-  "update.hacs_update": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_57": {
+    "recorder_days": 3
   },
-  "update.amt_8000_update_4": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_58": {
+    "recorder_days": 3
   },
-  "update.jokes_update": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_59": {
+    "recorder_days": 3
   },
-  "update.ha_recorder_manager_update": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_6": {
+    "recorder_days": 3
   },
-  "update.local_tuya_update": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_60": {
+    "recorder_days": 3
   },
-  "update.tuya_monitor_update": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_61": {
+    "recorder_days": 3
   },
-  "update.tuya_local_update": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_7": {
+    "recorder_days": 3
   },
-  "update.webrtc_camera_update": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_8": {
+    "recorder_days": 3
   },
-  "update.frigate_update": {
-    "recorder_days": 10
-  },
-  "sensor.pasta_frigate": {
-    "recorder_days": 10
-  },
-  "sensor.speedtest_ping": {
-    "recorder_days": 10
-  },
-  "sensor.speedtest_download": {
-    "recorder_days": 10
-  },
-  "sensor.speedtest_upload": {
-    "recorder_days": 10
-  },
-  "sensor.imap_alexandre_litwinski_com_br": {
-    "recorder_days": 10
+  "sensor.amt_8000_zone_9": {
+    "recorder_days": 3
   },
   "sensor.cpu_speed": {
-    "recorder_days": 10
+    "recorder_exclude": true
   },
-  "sensor.onedrive_armazenamento_total_disponivel": {
-    "recorder_days": 10
+  "climate.ar_condicionado_quarto": {
+    "recorder_exclude": true
   },
-  "sensor.onedrive_armazenamento_usado": {
-    "recorder_days": 10
+  "sensor.0xa4c1385304c7d9b3_illuminance": {
+    "recorder_exclude": true
   },
-  "sensor.onedrive_armazenamento_restante": {
-    "recorder_days": 10
+  "binary_sensor.0x000d6f001933d103_battery_low": {
+    "recorder_days": 1
   },
-  "sensor.onedrive_estado_da_unidade": {
-    "recorder_days": 10
+  "binary_sensor.0x000d6f001941ade6_battery_low": {
+    "recorder_days": 1
   },
-  "binary_sensor.backups_stale": {
-    "recorder_days": 10
+  "binary_sensor.0xa4c1382a3366db2b_battery_low": {
+    "recorder_days": 1
   },
-  "sensor.backup_state": {
-    "recorder_days": 10
+  "binary_sensor.0xa4c1382e54d0f6cb_battery_low": {
+    "recorder_days": 1
+  },
+  "binary_sensor.0xa4c13835f48a8ce3_battery_low": {
+    "recorder_days": 1
+  },
+  "binary_sensor.0xa4c13858d8036b98_battery_low": {
+    "recorder_days": 1
+  },
+  "binary_sensor.0xa4c1387d56adc607_battery_low": {
+    "recorder_days": 1
+  },
+  "binary_sensor.0xa4c13894a20b594e_battery_low": {
+    "recorder_days": 1
+  },
+  "binary_sensor.0xa4c13894a20b594e_battery_low_2": {
+    "recorder_days": 1
+  },
+  "binary_sensor.0xa4c138aa17deea9b_battery_low": {
+    "recorder_days": 1
+  },
+  "binary_sensor.0xa4c138be12c2706f_battery_low": {
+    "recorder_days": 1
+  },
+  "binary_sensor.0xa4c138e30c9dacc9_battery_low": {
+    "recorder_days": 1
+  },
+  "binary_sensor.caixa_dagua_battery_low": {
+    "recorder_days": 1
+  },
+  "binary_sensor.escada_externa_1_battery_low": {
+    "recorder_days": 1
+  },
+  "binary_sensor.inundacao_varanda_hanna_battery_low": {
+    "recorder_days": 1
+  },
+  "binary_sensor.movimento_cozinha_2_battery_low": {
+    "recorder_days": 1
+  },
+  "binary_sensor.movimento_despensa_battery_low": {
+    "recorder_days": 1
+  },
+  "binary_sensor.movimento_ducha_casal_battery_low": {
+    "recorder_days": 1
+  },
+  "binary_sensor.movimento_entrada_principal_battery_low": {
+    "recorder_days": 1
+  },
+  "binary_sensor.movimento_escada_1_battery_low": {
+    "recorder_days": 1
+  },
+  "binary_sensor.movimento_escritorio_hanna_battery_low": {
+    "recorder_days": 1
+  },
+  "binary_sensor.movimento_jantar_battery_low": {
+    "recorder_days": 1
+  },
+  "binary_sensor.movimento_lavabo_1_battery_low": {
+    "recorder_days": 1
+  },
+  "binary_sensor.movimento_lavabo_2_battery_low": {
+    "recorder_days": 1
+  },
+  "binary_sensor.movimento_quarto_ferramentas_battery_low": {
+    "recorder_days": 1
+  },
+  "binary_sensor.movimento_sala_de_estar_battery_low": {
+    "recorder_days": 1
+  },
+  "binary_sensor.porta_alpendre_battery_low": {
+    "recorder_days": 1
+  },
+  "binary_sensor.porta_escritorio_alex_battery_low": {
+    "recorder_days": 1
+  },
+  "binary_sensor.relogio_cemig_battery_low": {
+    "recorder_days": 1
+  },
+  "binary_sensor.sensor_armario_hanna_battery_low": {
+    "recorder_days": 1
+  },
+  "binary_sensor.sensor_condensadora_ar_tv_battery_low": {
+    "recorder_days": 1
+  },
+  "binary_sensor.sensor_fumaca_closet_battery_low": {
+    "recorder_days": 1
+  },
+  "binary_sensor.tanque_lavanderia_battery_low": {
+    "recorder_days": 1
+  },
+  "binary_sensor.temperatura_sotao_battery_low": {
+    "recorder_days": 1
+  },
+  "binary_sensor.vazamento_banheiro_casal_battery_low": {
+    "recorder_days": 1
+  },
+  "binary_sensor.vazamento_lava_loucas_battery_low": {
+    "recorder_days": 1
+  },
+  "binary_sensor.vazamento_sotao_1_battery_low_2": {
+    "recorder_days": 1
+  },
+  "sensor.0x000d6f001933d103_battery": {
+    "recorder_days": 1
+  },
+  "sensor.0x000d6f001941ade6_battery": {
+    "recorder_days": 1
+  },
+  "sensor.0x00158d0001d7d3a0_battery": {
+    "recorder_days": 1
+  },
+  "sensor.0x00158d0007296752_battery": {
+    "recorder_days": 1
+  },
+  "sensor.0xa4c1382a3366db2b_battery": {
+    "recorder_days": 1
+  },
+  "sensor.0xa4c1382e54d0f6cb_battery": {
+    "recorder_days": 1
+  },
+  "sensor.0xa4c13835f48a8ce3_battery": {
+    "recorder_days": 1
+  },
+  "sensor.0xa4c138419ea404db_battery": {
+    "recorder_days": 1
+  },
+  "sensor.0xa4c13858d8036b98_battery": {
+    "recorder_days": 1
+  },
+  "sensor.0xa4c1387d56adc607_battery": {
+    "recorder_days": 1
+  },
+  "sensor.0xa4c13894a20b594e_battery": {
+    "recorder_days": 1
+  },
+  "sensor.0xa4c13894a20b594e_battery_2": {
+    "recorder_days": 1
+  },
+  "sensor.0xa4c138aa17deea9b_battery": {
+    "recorder_days": 1
+  },
+  "sensor.0xa4c138be12c2706f_battery": {
+    "recorder_days": 1
+  },
+  "sensor.0xa4c138e30c9dacc9_battery": {
+    "recorder_days": 1
+  },
+  "sensor.0xcc86ecfffe5d6e0d_battery": {
+    "recorder_days": 1
+  },
+  "sensor.armario_escritorio_alex_battery": {
+    "recorder_days": 1
+  },
+  "sensor.armario_esterilizador_battery": {
+    "recorder_days": 1
+  },
+  "sensor.armario_servidores_battery": {
+    "recorder_days": 1
+  },
+  "sensor.botao_abertura_portao_social_battery": {
+    "recorder_days": 1
+  },
+  "sensor.botao_alimentador_battery": {
+    "recorder_days": 1
+  },
+  "sensor.botao_luminoso_garagem_battery": {
+    "recorder_days": 1
+  },
+  "sensor.caixa_dagua_battery": {
+    "recorder_days": 1
+  },
+  "sensor.caixa_filamentos_1_battery": {
+    "recorder_days": 1
+  },
+  "sensor.caixa_filamentos_2_battery": {
+    "recorder_days": 1
+  },
+  "sensor.cctvserver_sm_f926b_battery_health": {
+    "recorder_days": 1
+  },
+  "sensor.cctvserver_sm_f926b_battery_level": {
+    "recorder_days": 1
+  },
+  "sensor.cctvserver_sm_f926b_battery_power": {
+    "recorder_days": 1
+  },
+  "sensor.cctvserver_sm_f926b_battery_state": {
+    "recorder_days": 1
+  },
+  "sensor.cctvserver_sm_f926b_battery_temperature": {
+    "recorder_days": 1
+  },
+  "sensor.cctvserver_sm_s928b_battery_level": {
+    "recorder_days": 1
+  },
+  "sensor.cctvserver_sm_s928b_battery_state": {
+    "recorder_days": 1
+  },
+  "sensor.cenas_escrivaninha_battery": {
+    "recorder_days": 1
+  },
+  "sensor.controle_alexandre_battery": {
+    "recorder_days": 1
+  },
+  "sensor.controle_alpendre_battery": {
+    "recorder_days": 1
+  },
+  "sensor.controle_bancada_battery": {
+    "recorder_days": 1
+  },
+  "sensor.controle_hanna_battery": {
+    "recorder_days": 1
+  },
+  "sensor.controle_intensidade_sala_de_estar_battery": {
+    "recorder_days": 1
+  },
+  "sensor.controle_toldo_battery": {
+    "recorder_days": 1
+  },
+  "sensor.controle_toldo_gas_battery": {
+    "recorder_days": 1
+  },
+  "sensor.costela_de_adao_battery": {
+    "recorder_days": 1
+  },
+  "sensor.costela_de_adao_battery_state": {
+    "recorder_days": 1
+  },
+  "sensor.cozinha_battery": {
+    "recorder_days": 1
+  },
+  "sensor.despensa_graos_battery": {
+    "recorder_days": 1
+  },
+  "sensor.escada_externa_1_battery": {
+    "recorder_days": 1
+  },
+  "sensor.fire_cozinha_battery_health": {
+    "recorder_days": 1
+  },
+  "sensor.fire_cozinha_battery_level": {
+    "recorder_days": 1
+  },
+  "sensor.fire_cozinha_battery_power": {
+    "recorder_days": 1
+  },
+  "sensor.fire_cozinha_battery_state": {
+    "recorder_days": 1
+  },
+  "sensor.fire_cozinha_battery_temperature": {
+    "recorder_days": 1
+  },
+  "sensor.fumaca_banheiro_battery": {
+    "recorder_days": 1
+  },
+  "sensor.fumaca_escritorio_alex_battery": {
+    "recorder_days": 1
+  },
+  "sensor.fumaca_sala_jantar_battery": {
+    "recorder_days": 1
+  },
+  "sensor.fumaca_sala_tv_battery": {
+    "recorder_days": 1
+  },
+  "sensor.galaxy_watch4_classic_b5rb_battery_level": {
+    "recorder_days": 1
+  },
+  "sensor.galaxy_watch4_classic_b5rb_battery_level_2": {
+    "recorder_days": 1
+  },
+  "sensor.galaxy_watch4_classic_b5rb_battery_state": {
+    "recorder_days": 1
+  },
+  "sensor.galaxy_watch4_classic_b5rb_battery_state_2": {
+    "recorder_days": 1
+  },
+  "sensor.galaxy_watch_battery_level": {
+    "recorder_days": 1
+  },
+  "sensor.galaxy_watch_battery_state": {
+    "recorder_days": 1
+  },
+  "sensor.garagem_battery": {
+    "recorder_days": 1
+  },
+  "sensor.geladeira_cozinha_battery": {
+    "recorder_days": 1
+  },
+  "sensor.horta_alpendre_battery": {
+    "recorder_days": 1
+  },
+  "sensor.horta_alpendre_battery_state": {
+    "recorder_days": 1
+  },
+  "sensor.horta_gourmet_battery": {
+    "recorder_days": 1
+  },
+  "sensor.horta_gourmet_battery_state": {
+    "recorder_days": 1
+  },
+  "sensor.interfone_battery": {
+    "recorder_days": 1
+  },
+  "sensor.interruptor_closet_battery": {
+    "recorder_days": 1
+  },
+  "sensor.inundacao_varanda_hanna_battery": {
+    "recorder_days": 1
+  },
+  "sensor.irrigacao_muro_battery": {
+    "recorder_days": 1
+  },
+  "sensor.movimento_banheiro_casal_battery": {
+    "recorder_days": 1
+  },
+  "sensor.movimento_closet_battery": {
+    "recorder_days": 1
+  },
+  "sensor.movimento_cozinha_1_battery": {
+    "recorder_days": 1
+  },
+  "sensor.movimento_cozinha_2_battery": {
+    "recorder_days": 1
+  },
+  "sensor.movimento_despensa_battery": {
+    "recorder_days": 1
+  },
+  "sensor.movimento_ducha_casal_battery": {
+    "recorder_days": 1
+  },
+  "sensor.movimento_entrada_principal_battery": {
+    "recorder_days": 1
+  },
+  "sensor.movimento_escada_1_battery": {
+    "recorder_days": 1
+  },
+  "sensor.movimento_escada_2_battery": {
+    "recorder_days": 1
+  },
+  "sensor.movimento_escritorio_alex_battery": {
+    "recorder_days": 1
+  },
+  "sensor.movimento_escritorio_hanna_battery": {
+    "recorder_days": 1
+  },
+  "sensor.movimento_jantar_battery": {
+    "recorder_days": 1
+  },
+  "sensor.movimento_lavabo_1_battery": {
+    "recorder_days": 1
+  },
+  "sensor.movimento_lavabo_2_battery": {
+    "recorder_days": 1
+  },
+  "sensor.movimento_quarto_ferramentas_battery": {
+    "recorder_days": 1
+  },
+  "sensor.movimento_sala_de_estar_battery": {
+    "recorder_days": 1
+  },
+  "sensor.panico_cozinha_battery": {
+    "recorder_days": 1
+  },
+  "sensor.panico_escritorio_hanna_battery": {
+    "recorder_days": 1
+  },
+  "sensor.panico_quarto_casal_battery": {
+    "recorder_days": 1
+  },
+  "sensor.porta_alpendre_battery": {
+    "recorder_days": 1
+  },
+  "sensor.porta_de_vidro_gourmet_battery": {
+    "recorder_days": 1
+  },
+  "sensor.porta_escritorio_alex_battery": {
+    "recorder_days": 1
+  },
+  "sensor.porta_quarto_ferramentas_battery": {
+    "recorder_days": 1
+  },
+  "sensor.registro_alpendre_battery": {
+    "recorder_days": 1
+  },
+  "sensor.relogio_cemig_battery": {
+    "recorder_days": 1
+  },
+  "sensor.renda_portuguesa_battery": {
+    "recorder_days": 1
+  },
+  "sensor.renda_portuguesa_battery_state": {
+    "recorder_days": 1
+  },
+  "sensor.s22_hanna_battery_cycle_count": {
+    "recorder_days": 1
+  },
+  "sensor.s22_hanna_battery_health": {
+    "recorder_days": 1
+  },
+  "sensor.s22_hanna_battery_level": {
+    "recorder_days": 1
+  },
+  "sensor.s22_hanna_battery_power": {
+    "recorder_days": 1
+  },
+  "sensor.s22_hanna_battery_state": {
+    "recorder_days": 1
+  },
+  "sensor.s22_hanna_battery_temperature": {
+    "recorder_days": 1
+  },
+  "sensor.s22_hanna_car_battery": {
+    "recorder_days": 1
+  },
+  "sensor.s24_ultra_battery_cycle_count": {
+    "recorder_days": 1
+  },
+  "sensor.s24_ultra_battery_health": {
+    "recorder_days": 1
+  },
+  "sensor.s24_ultra_battery_level": {
+    "recorder_days": 1
+  },
+  "sensor.s24_ultra_battery_power": {
+    "recorder_days": 1
+  },
+  "sensor.s24_ultra_battery_state": {
+    "recorder_days": 1
+  },
+  "sensor.s24_ultra_battery_temperature": {
+    "recorder_days": 1
+  },
+  "sensor.s24_ultra_car_battery": {
+    "recorder_days": 1
+  },
+  "sensor.s9_ultra_battery_level": {
+    "recorder_days": 1
+  },
+  "sensor.s9_ultra_battery_state": {
+    "recorder_days": 1
+  },
+  "sensor.sala_tv_battery": {
+    "recorder_days": 1
+  },
+  "sensor.sensor_abertura_portao_de_servico_battery": {
+    "recorder_days": 1
+  },
+  "sensor.sensor_adega_battery": {
+    "recorder_days": 1
+  },
+  "sensor.sensor_ambiente_cozinha_battery": {
+    "recorder_days": 1
+  },
+  "sensor.sensor_ambiente_quarto_battery": {
+    "recorder_days": 1
+  },
+  "sensor.sensor_armario_closet_battery": {
+    "recorder_days": 1
+  },
+  "sensor.sensor_armario_hanna_battery": {
+    "recorder_days": 1
+  },
+  "sensor.sensor_barreira_janelas_battery": {
+    "recorder_days": 1
+  },
+  "sensor.sensor_cervejeira_battery": {
+    "recorder_days": 1
+  },
+  "sensor.sensor_chuva_battery": {
+    "recorder_days": 1
+  },
+  "sensor.sensor_chuva_e_lux_battery": {
+    "recorder_days": 1
+  },
+  "sensor.sensor_condensadora_ar_tv_battery": {
+    "recorder_days": 1
+  },
+  "sensor.sensor_ducha_casal_battery": {
+    "recorder_days": 1
+  },
+  "sensor.sensor_fumaca_copa_battery": {
+    "recorder_days": 1
+  },
+  "sensor.sensor_fumaca_estar_battery": {
+    "recorder_days": 1
+  },
+  "sensor.sensor_fumaca_garagem_battery": {
+    "recorder_days": 1
+  },
+  "sensor.sensor_fumaca_hanna_battery": {
+    "recorder_days": 1
+  },
+  "sensor.sensor_fumaca_quarto_battery": {
+    "recorder_days": 1
+  },
+  "sensor.sensor_fumaca_sotao_battery": {
+    "recorder_days": 1
+  },
+  "sensor.sensor_gas_battery": {
+    "recorder_days": 1
+  },
+  "sensor.sensor_gourmet_battery": {
+    "recorder_days": 1
+  },
+  "sensor.sensor_vibracao_portao_social_battery": {
+    "recorder_days": 1
+  },
+  "sensor.sirene_despensa_battery": {
+    "recorder_days": 1
+  },
+  "sensor.sirene_entrada_battery": {
+    "recorder_days": 1
+  },
+  "sensor.sirene_garagem_battery": {
+    "recorder_days": 1
+  },
+  "sensor.sm_f926b_battery_health": {
+    "recorder_days": 1
+  },
+  "sensor.sm_f926b_battery_level": {
+    "recorder_days": 1
+  },
+  "sensor.sm_f926b_battery_power": {
+    "recorder_days": 1
+  },
+  "sensor.sm_f926b_battery_state": {
+    "recorder_days": 1
+  },
+  "sensor.sm_f926b_battery_temperature": {
+    "recorder_days": 1
+  },
+  "sensor.sm_s928b_battery_level": {
+    "recorder_days": 1
+  },
+  "sensor.sm_s928b_battery_state": {
+    "recorder_days": 1
+  },
+  "sensor.sm_t725_battery_level": {
+    "recorder_days": 1
+  },
+  "sensor.sm_t725_battery_state": {
+    "recorder_days": 1
+  },
+  "sensor.smarttag_battery": {
+    "recorder_days": 1
+  },
+  "sensor.tanque_lavanderia_battery": {
+    "recorder_days": 1
+  },
+  "sensor.temperatura_escritorio_alex_battery": {
+    "recorder_days": 1
+  },
+  "sensor.temperatura_exterior_battery": {
+    "recorder_days": 1
+  },
+  "sensor.temperatura_nicho_cervejeira_battery": {
+    "recorder_days": 1
+  },
+  "sensor.temperatura_sotao_battery": {
+    "recorder_days": 1
+  },
+  "sensor.tomatinho_cereja_battery": {
+    "recorder_days": 1
+  },
+  "sensor.tomatinho_cereja_battery_state": {
+    "recorder_days": 1
+  },
+  "sensor.vaso_escada_battery": {
+    "recorder_days": 1
+  },
+  "sensor.vaso_escada_battery_state": {
+    "recorder_days": 1
+  },
+  "sensor.vazamento_banheiro_casal_battery": {
+    "recorder_days": 1
+  },
+  "sensor.vazamento_lava_loucas_battery": {
+    "recorder_days": 1
+  },
+  "sensor.vazamento_sotao_1_battery_2": {
+    "recorder_days": 1
+  },
+  "sensor.vibracao_blindex_battery": {
+    "recorder_days": 1
+  },
+  "sensor.vibracao_janela_sala_1_battery": {
+    "recorder_days": 1
+  },
+  "sensor.vibracao_janela_sala_3_battery": {
+    "recorder_days": 1
+  },
+  "sensor.vibracao_portao_garagem_battery": {
+    "recorder_days": 1
+  },
+  "sensor.watch_4_battery_health": {
+    "recorder_days": 1
+  },
+  "sensor.watch_4_battery_level": {
+    "recorder_days": 1
+  },
+  "sensor.watch_4_battery_power": {
+    "recorder_days": 1
+  },
+  "sensor.watch_4_battery_state": {
+    "recorder_days": 1
+  },
+  "sensor.watch_4_battery_temperature": {
+    "recorder_days": 1
+  },
+  "sensor.zfold3_battery_level": {
+    "recorder_days": 1
+  },
+  "sensor.zfold3_battery_state": {
+    "recorder_days": 1
+  },
+  "switch.battery_state_card_entity_row_pre_release": {
+    "recorder_days": 1
+  },
+  "update.battery_state_card_entity_row_update": {
+    "recorder_days": 1
   }
 }

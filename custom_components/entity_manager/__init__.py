@@ -6,6 +6,7 @@ import yaml
 import shutil
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
+import copy
 
 import voluptuous as vol
 
@@ -19,7 +20,9 @@ import homeassistant.helpers.config_validation as cv
 from .const import (
     DOMAIN, 
     CONFIG_FILE, 
+    DOMAIN_CONFIG_FILE,
     DEFAULT_RECORDER_DAYS,
+    DEFAULT_DOMAIN_RECORDER_DAYS,
     SERVICE_UPDATE_ENTITY_STATE,
     SERVICE_UPDATE_RECORDER_DAYS,
     SERVICE_BULK_UPDATE,
@@ -33,6 +36,11 @@ from .const import (
     SERVICE_BULK_UPDATE_RECORDER_EXCLUDE,
     SERVICE_UPDATE_RECORDER_CONFIG,
     SERVICE_PURGE_ALL_ENTITIES,
+    SERVICE_EXCLUDE_DOMAIN,
+    SERVICE_INCLUDE_DOMAIN,
+    SERVICE_BULK_EXCLUDE_DOMAINS,
+    SERVICE_UPDATE_DOMAIN_RECORDER_DAYS,
+    SERVICE_BULK_UPDATE_DOMAIN_RECORDER_DAYS,
     ATTR_ENTITY_ID,
     ATTR_ENTITY_IDS,
     ATTR_ENABLED,
@@ -42,14 +50,24 @@ from .const import (
     ATTR_BACKUP_CONFIG,
     ATTR_LIMIT,
     ATTR_DAYS_BACK,
+    ATTR_DOMAIN,
+    ATTR_DOMAINS,
+    ATTR_DOMAIN_RECORDER_DAYS,
     UPDATE_RECORDER_EXCLUDE_SCHEMA,
     BULK_UPDATE_RECORDER_EXCLUDE_SCHEMA,
     UPDATE_RECORDER_CONFIG_SCHEMA,
     INTELLIGENT_PURGE_SCHEMA,
     GENERATE_RECORDER_REPORT_SCHEMA,
     PURGE_ALL_ENTITIES_SCHEMA,
+    EXCLUDE_DOMAIN_SCHEMA,
+    INCLUDE_DOMAIN_SCHEMA,
+    BULK_EXCLUDE_DOMAINS_SCHEMA,
+    UPDATE_DOMAIN_RECORDER_DAYS_SCHEMA,
+    BULK_UPDATE_DOMAIN_RECORDER_DAYS_SCHEMA,
     RECORDER_CONFIG_PATH,
+    RECORDER_YAML_PATH,
     RECORDER_CONFIG_BACKUP_PATH,
+    RECORDER_YAML_BACKUP_PATH,
 )
 from .api import setup_api
 
@@ -93,14 +111,38 @@ PURGE_RECORDER_SCHEMA = vol.Schema({
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Entity Manager from a config entry."""
+    _LOGGER.info("Setting up Entity Manager integration")
+    
     hass.data.setdefault(DOMAIN, {})
     manager = EntityManager(hass)
     hass.data[DOMAIN] = manager
-    await manager.load_config()
-    await register_services(hass, manager)
-    setup_api(hass)
-    await hass.config_entries.async_forward_entry_setups(entry, ["sensor"])
-    return True
+    
+    try:
+        await manager.load_config()
+        _LOGGER.info("Entity Manager configuration loaded successfully")
+        
+        await register_services(hass, manager)
+        _LOGGER.info("Entity Manager services registered successfully")
+        
+        setup_api(hass)
+        _LOGGER.info("Entity Manager API setup completed")
+        
+        await hass.config_entries.async_forward_entry_setups(entry, ["sensor"])
+        _LOGGER.info("Entity Manager sensor platform setup completed")
+        
+        # Add options update listener
+        entry.async_on_unload(entry.add_update_listener(async_reload_entry))
+        
+        return True
+    except Exception as e:
+        _LOGGER.error("Failed to setup Entity Manager: %s", e, exc_info=True)
+        return False
+
+
+async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Reload config entry."""
+    await async_unload_entry(hass, entry)
+    await async_setup_entry(hass, entry)
 
 async def register_services(hass: HomeAssistant, manager):
     """Register all Entity Manager services."""
@@ -131,7 +173,7 @@ async def register_services(hass: HomeAssistant, manager):
     async def handle_generate_recorder_report(call: ServiceCall):
         await manager.generate_recorder_report(call.data.get(ATTR_LIMIT, 100), call.data.get(ATTR_DAYS_BACK, 30))
 
-    # Novos handlers
+    # Existing handlers
     async def handle_update_recorder_exclude(call: ServiceCall):
         await manager.update_recorder_exclude(call.data[ATTR_ENTITY_ID], call.data[ATTR_RECORDER_EXCLUDE])
     
@@ -144,7 +186,32 @@ async def register_services(hass: HomeAssistant, manager):
     async def handle_purge_all_entities(call: ServiceCall):
         await manager.purge_all_entities(call.data.get(ATTR_FORCE_PURGE, False))
 
-    # Registrar serviços existentes
+    # UPDATED DOMAIN HANDLERS
+    async def handle_exclude_domain(call: ServiceCall):
+        domain = call.data[ATTR_DOMAIN]
+        recorder_exclude = call.data.get(ATTR_RECORDER_EXCLUDE, True)
+        recorder_days = call.data.get(ATTR_RECORDER_DAYS)
+        await manager.exclude_domain(domain, recorder_exclude, recorder_days)
+    
+    async def handle_include_domain(call: ServiceCall):
+        domain = call.data[ATTR_DOMAIN]
+        recorder_days = call.data.get(ATTR_RECORDER_DAYS)
+        await manager.include_domain(domain, recorder_days)
+    
+    async def handle_bulk_exclude_domains(call: ServiceCall):
+        domains = call.data[ATTR_DOMAINS]
+        recorder_exclude = call.data.get(ATTR_RECORDER_EXCLUDE, True)
+        recorder_days = call.data.get(ATTR_RECORDER_DAYS)
+        await manager.bulk_exclude_domains(domains, recorder_exclude, recorder_days)
+
+    # NEW DOMAIN RECORDER DAYS HANDLERS
+    async def handle_update_domain_recorder_days(call: ServiceCall):
+        await manager.update_domain_recorder_days(call.data[ATTR_DOMAIN], call.data[ATTR_DOMAIN_RECORDER_DAYS])
+    
+    async def handle_bulk_update_domain_recorder_days(call: ServiceCall):
+        await manager.bulk_update_domain_recorder_days(call.data[ATTR_DOMAINS], call.data[ATTR_DOMAIN_RECORDER_DAYS])
+
+    # Register existing services
     hass.services.async_register(DOMAIN, SERVICE_UPDATE_ENTITY_STATE, handle_update_entity_state, UPDATE_ENTITY_STATE_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_UPDATE_RECORDER_DAYS, handle_update_recorder_days, UPDATE_RECORDER_DAYS_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_BULK_UPDATE, handle_bulk_update, BULK_UPDATE_SCHEMA)
@@ -155,31 +222,36 @@ async def register_services(hass: HomeAssistant, manager):
     hass.services.async_register(DOMAIN, SERVICE_INTELLIGENT_PURGE, handle_intelligent_purge, INTELLIGENT_PURGE_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_GENERATE_RECORDER_REPORT, handle_generate_recorder_report, GENERATE_RECORDER_REPORT_SCHEMA)
     
-    # Registrar novos serviços
+    # Register existing services
     hass.services.async_register(DOMAIN, SERVICE_UPDATE_RECORDER_EXCLUDE, handle_update_recorder_exclude, UPDATE_RECORDER_EXCLUDE_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_BULK_UPDATE_RECORDER_EXCLUDE, handle_bulk_update_recorder_exclude, BULK_UPDATE_RECORDER_EXCLUDE_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_UPDATE_RECORDER_CONFIG, handle_update_recorder_config, UPDATE_RECORDER_CONFIG_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_PURGE_ALL_ENTITIES, handle_purge_all_entities, PURGE_ALL_ENTITIES_SCHEMA)
+    
+    # Register UPDATED domain services
+    hass.services.async_register(DOMAIN, SERVICE_EXCLUDE_DOMAIN, handle_exclude_domain, EXCLUDE_DOMAIN_SCHEMA)
+    hass.services.async_register(DOMAIN, SERVICE_INCLUDE_DOMAIN, handle_include_domain, INCLUDE_DOMAIN_SCHEMA)
+    hass.services.async_register(DOMAIN, SERVICE_BULK_EXCLUDE_DOMAINS, handle_bulk_exclude_domains, BULK_EXCLUDE_DOMAINS_SCHEMA)
+    
+    # Register NEW domain recorder days services
+    hass.services.async_register(DOMAIN, SERVICE_UPDATE_DOMAIN_RECORDER_DAYS, handle_update_domain_recorder_days, UPDATE_DOMAIN_RECORDER_DAYS_SCHEMA)
+    hass.services.async_register(DOMAIN, SERVICE_BULK_UPDATE_DOMAIN_RECORDER_DAYS, handle_bulk_update_domain_recorder_days, BULK_UPDATE_DOMAIN_RECORDER_DAYS_SCHEMA)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    # Remover serviços existentes
-    hass.services.async_remove(DOMAIN, SERVICE_UPDATE_ENTITY_STATE)
-    hass.services.async_remove(DOMAIN, SERVICE_UPDATE_RECORDER_DAYS)
-    hass.services.async_remove(DOMAIN, SERVICE_BULK_UPDATE)
-    hass.services.async_remove(DOMAIN, SERVICE_DELETE_ENTITY)
-    hass.services.async_remove(DOMAIN, SERVICE_BULK_DELETE)
-    hass.services.async_remove(DOMAIN, SERVICE_PURGE_RECORDER)
-    hass.services.async_remove(DOMAIN, SERVICE_RELOAD_CONFIG)
-    hass.services.async_remove(DOMAIN, SERVICE_INTELLIGENT_PURGE)
-    hass.services.async_remove(DOMAIN, SERVICE_GENERATE_RECORDER_REPORT)
+    # Remove existing services
+    services_to_remove = [
+        SERVICE_UPDATE_ENTITY_STATE, SERVICE_UPDATE_RECORDER_DAYS, SERVICE_BULK_UPDATE,
+        SERVICE_DELETE_ENTITY, SERVICE_BULK_DELETE, SERVICE_PURGE_RECORDER, SERVICE_RELOAD_CONFIG,
+        SERVICE_INTELLIGENT_PURGE, SERVICE_GENERATE_RECORDER_REPORT, SERVICE_UPDATE_RECORDER_EXCLUDE,
+        SERVICE_BULK_UPDATE_RECORDER_EXCLUDE, SERVICE_UPDATE_RECORDER_CONFIG, SERVICE_PURGE_ALL_ENTITIES,
+        SERVICE_EXCLUDE_DOMAIN, SERVICE_INCLUDE_DOMAIN, SERVICE_BULK_EXCLUDE_DOMAINS,
+        SERVICE_UPDATE_DOMAIN_RECORDER_DAYS, SERVICE_BULK_UPDATE_DOMAIN_RECORDER_DAYS
+    ]
     
-    # Remover novos serviços
-    hass.services.async_remove(DOMAIN, SERVICE_UPDATE_RECORDER_EXCLUDE)
-    hass.services.async_remove(DOMAIN, SERVICE_BULK_UPDATE_RECORDER_EXCLUDE)
-    hass.services.async_remove(DOMAIN, SERVICE_UPDATE_RECORDER_CONFIG)
-    hass.services.async_remove(DOMAIN, SERVICE_PURGE_ALL_ENTITIES)
+    for service in services_to_remove:
+        hass.services.async_remove(DOMAIN, service)
     
     unload_ok = await hass.config_entries.async_forward_entry_unload(entry, "sensor")
     if unload_ok:
@@ -194,7 +266,10 @@ class EntityManager:
         """Initialize Entity Manager."""
         self.hass = hass
         self._config: Dict[str, Any] = {}
+        self._domain_config: Dict[str, Any] = {}
         self._config_path = hass.config.path("custom_components", DOMAIN, CONFIG_FILE)
+        self._domain_config_path = hass.config.path("custom_components", DOMAIN, DOMAIN_CONFIG_FILE)
+        self._config_lock = False  # Simple lock to prevent concurrent access
 
     def _load_config_sync(self) -> Dict[str, Any]:
         """Loads the config file synchronously."""
@@ -216,40 +291,77 @@ class EntityManager:
         except IOError as e:
             _LOGGER.error("Could not write to entity manager config file: %s", e)
 
+    def _load_domain_config_sync(self) -> Dict[str, Any]:
+        """Loads the domain config file synchronously."""
+        if not os.path.exists(self._domain_config_path):
+            return {}
+        try:
+            with open(self._domain_config_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError) as e:
+            _LOGGER.error("Could not read or decode domain config file: %s", e)
+            return {}
+
+    def _save_domain_config_sync(self) -> None:
+        """Saves the domain config file synchronously."""
+        try:
+            os.makedirs(os.path.dirname(self._domain_config_path), exist_ok=True)
+            with open(self._domain_config_path, 'w', encoding='utf-8') as f:
+                json.dump(self._domain_config, f, indent=2, ensure_ascii=False)
+        except IOError as e:
+            _LOGGER.error("Could not write to domain config file: %s", e)
+
     async def load_config(self):
-        """Load configuration from file asynchronously."""
+        """Load configuration from files asynchronously."""
+        if self._config_lock:
+            _LOGGER.warning("Config is locked, waiting...")
+            return
         self._config = await self.hass.async_add_executor_job(self._load_config_sync)
+        self._domain_config = await self.hass.async_add_executor_job(self._load_domain_config_sync)
 
     async def save_config(self):
         """Save configuration to file asynchronously."""
+        if self._config_lock:
+            _LOGGER.warning("Config is locked, skipping save...")
+            return
         await self.hass.async_add_executor_job(self._save_config_sync)
+
+    async def save_domain_config(self):
+        """Save domain configuration to file asynchronously."""
+        if self._config_lock:
+            _LOGGER.warning("Config is locked, skipping domain save...")
+            return
+        await self.hass.async_add_executor_job(self._save_domain_config_sync)
 
     async def get_all_entities(self) -> List[Dict[str, Any]]:
         """Get all entities with their configurations and integration info."""
         entity_registry: EntityRegistry = async_get_entity_registry(self.hass)
         entities = []
 
-        # Buscar TODAS as entidades do registry (habilitadas e desabilitadas)
-        for entity_entry in entity_registry.entities.values():
+        # Create a copy of registry entities to avoid modification during iteration
+        registry_entities = dict(entity_registry.entities)
+
+        # Process registry entities
+        for entity_entry in registry_entities.values():
             entity_id = entity_entry.entity_id
             config = self._config.get(entity_id, {})
+            domain = entity_id.split('.')[0]
+            domain_config = self._domain_config.get(domain, {})
             
-            # Determinar se está habilitada
+            # Determine if enabled
             is_enabled = not entity_entry.disabled_by
             
-            # Tentar pegar o estado atual (pode não existir se desabilitada)
+            # Try to get current state
             state_obj = self.hass.states.get(entity_id)
             
             if state_obj:
-                # Entidade tem estado (provavelmente habilitada)
                 entity_name = state_obj.name or entity_id
                 entity_state = state_obj.state
             else:
-                # Entidade não tem estado (provavelmente desabilitada)
                 entity_name = entity_entry.name or entity_entry.original_name or entity_id
                 entity_state = "disabled" if not is_enabled else "unavailable"
             
-            # Determinar domínio da plataforma e integração
+            # Determine platform and integration domain
             platform = entity_entry.platform or "unknown"
             integration_domain = "homeassistant"
             
@@ -258,40 +370,54 @@ class EntityManager:
                 if config_entry:
                     integration_domain = config_entry.domain
 
+            # Determine recorder settings - priority: entity > domain > default
+            recorder_days = config.get("recorder_days") or domain_config.get("recorder_days", DEFAULT_RECORDER_DAYS)
+            recorder_exclude = config.get("recorder_exclude")
+            if recorder_exclude is None:
+                recorder_exclude = domain_config.get("recorder_exclude", False)
+
             entities.append({
                 "entity_id": entity_id,
                 "name": entity_name,
                 "state": entity_state,
-                "domain": entity_id.split('.')[0],  # Pegar domínio do entity_id
+                "domain": domain,
                 "platform": platform,
                 "integration_domain": integration_domain,
                 "enabled": is_enabled,
-                "recorder_days": config.get("recorder_days", DEFAULT_RECORDER_DAYS),
-                "recorder_exclude": config.get("recorder_exclude", False),
+                "recorder_days": recorder_days,
+                "recorder_exclude": recorder_exclude,
             })
 
-        # Adicionar entidades que estão apenas no states mas não no registry (edge case)
-        registry_entity_ids = {entry.entity_id for entry in entity_registry.entities.values()}
+        # Add entities from states that are not in registry
+        registry_entity_ids = set(registry_entities.keys())
         all_states = self.hass.states.async_all()
         
         for state in all_states:
             entity_id = state.entity_id
             if entity_id not in registry_entity_ids:
                 config = self._config.get(entity_id, {})
+                domain = state.domain
+                domain_config = self._domain_config.get(domain, {})
+                
+                # Determine recorder settings - priority: entity > domain > default
+                recorder_days = config.get("recorder_days") or domain_config.get("recorder_days", DEFAULT_RECORDER_DAYS)
+                recorder_exclude = config.get("recorder_exclude")
+                if recorder_exclude is None:
+                    recorder_exclude = domain_config.get("recorder_exclude", False)
                 
                 entities.append({
                     "entity_id": entity_id,
                     "name": state.name or entity_id,
                     "state": state.state,
-                    "domain": state.domain,
+                    "domain": domain,
                     "platform": "unknown",
                     "integration_domain": "homeassistant",
-                    "enabled": True,  # Se está em states, provavelmente está habilitada
-                    "recorder_days": config.get("recorder_days", DEFAULT_RECORDER_DAYS),
-                    "recorder_exclude": config.get("recorder_exclude", False),
+                    "enabled": True,
+                    "recorder_days": recorder_days,
+                    "recorder_exclude": recorder_exclude,
                 })
 
-        # Ordenar por entity_id para consistência
+        # Sort for consistency
         entities.sort(key=lambda x: x["entity_id"])
         
         return entities
@@ -329,14 +455,36 @@ class EntityManager:
         _LOGGER.info("Updated recorder exclude for %s: %s", entity_id, recorder_exclude)
     
     async def bulk_update_recorder_exclude(self, entity_ids: List[str], recorder_exclude: bool):
-        """Bulk update entities recorder exclude setting."""
-        for entity_id in entity_ids:
-            await self.update_recorder_exclude(entity_id, recorder_exclude)
-        _LOGGER.info("Bulk updated recorder exclude for %d entities: %s", len(entity_ids), recorder_exclude)
+        """Bulk update entities recorder exclude setting - FIXED to avoid iteration issues."""
+        # Create a copy of the entity_ids list to avoid modification during iteration
+        entity_ids_copy = list(entity_ids)
+        
+        _LOGGER.info("Starting bulk update recorder exclude for %d entities: %s", len(entity_ids_copy), recorder_exclude)
+        
+        # Lock config to prevent concurrent modifications
+        self._config_lock = True
+        
+        try:
+            # Process all entities at once to avoid multiple saves
+            for entity_id in entity_ids_copy:
+                if entity_id not in self._config:
+                    self._config[entity_id] = {}
+                self._config[entity_id]["recorder_exclude"] = recorder_exclude
+                _LOGGER.debug("Updated recorder exclude for %s: %s", entity_id, recorder_exclude)
+            
+            # Save config only once at the end
+            await self.save_config()
+            
+        finally:
+            self._config_lock = False
+        
+        _LOGGER.info("Bulk updated recorder exclude for %d entities: %s", len(entity_ids_copy), recorder_exclude)
     
     async def bulk_update(self, entity_ids: List[str], enabled: Optional[bool] = None, recorder_days: Optional[int] = None):
         """Bulk update entities."""
-        for entity_id in entity_ids:
+        entity_ids_copy = list(entity_ids)  # Avoid iteration issues
+        
+        for entity_id in entity_ids_copy:
             if enabled is not None:
                 await self.update_entity_state(entity_id, enabled)
             if recorder_days is not None:
@@ -353,60 +501,198 @@ class EntityManager:
     
     async def bulk_delete(self, entity_ids: List[str]):
         """Bulk delete entities."""
-        for entity_id in entity_ids:
+        entity_ids_copy = list(entity_ids)  # Avoid iteration issues
+        for entity_id in entity_ids_copy:
             await self.delete_entity(entity_id)
     
+    # NEW DOMAIN MANAGEMENT FUNCTIONS WITH RECORDER DAYS SUPPORT
+    async def update_domain_recorder_days(self, domain: str, recorder_days: int):
+        """Update recorder days for a domain."""
+        if domain not in self._domain_config:
+            self._domain_config[domain] = {}
+        self._domain_config[domain]["recorder_days"] = recorder_days
+        await self.save_domain_config()
+        _LOGGER.info("Updated recorder days for domain %s: %d", domain, recorder_days)
+    
+    async def bulk_update_domain_recorder_days(self, domains: List[str], recorder_days: int):
+        """Bulk update recorder days for multiple domains."""
+        domains_copy = list(domains)
+        
+        for domain in domains_copy:
+            if domain not in self._domain_config:
+                self._domain_config[domain] = {}
+            self._domain_config[domain]["recorder_days"] = recorder_days
+        
+        await self.save_domain_config()
+        _LOGGER.info("Bulk updated recorder days for %d domains: %d", len(domains_copy), recorder_days)
+    
+    async def exclude_domain(self, domain: str, recorder_exclude: bool = True, recorder_days: Optional[int] = None):
+        """Exclude/include all entities from a domain with optional recorder days."""
+        _LOGGER.info("Excluding domain %s from recorder: %s", domain, recorder_exclude)
+        
+        # Update domain configuration
+        if domain not in self._domain_config:
+            self._domain_config[domain] = {}
+        
+        self._domain_config[domain]["recorder_exclude"] = recorder_exclude
+        
+        if recorder_days is not None:
+            self._domain_config[domain]["recorder_days"] = recorder_days
+        
+        await self.save_domain_config()
+        
+        # Optional: Also update individual entities if you want to override domain settings
+        # Get all entities from the domain
+        entities = await self.get_all_entities()
+        domain_entities = [e["entity_id"] for e in entities if e["domain"] == domain]
+        
+        if domain_entities:
+            # Clear individual entity overrides to let domain config take precedence
+            for entity_id in domain_entities:
+                if entity_id in self._config:
+                    # Remove individual overrides to let domain config take precedence
+                    if "recorder_exclude" in self._config[entity_id]:
+                        del self._config[entity_id]["recorder_exclude"]
+                    if recorder_days is not None and "recorder_days" in self._config[entity_id]:
+                        del self._config[entity_id]["recorder_days"]
+                    
+                    # Remove empty configs
+                    if not self._config[entity_id]:
+                        del self._config[entity_id]
+            
+            await self.save_config()
+        
+        _LOGGER.info("Updated domain %s configuration: exclude=%s, days=%s", domain, recorder_exclude, recorder_days)
+    
+    async def include_domain(self, domain: str, recorder_days: Optional[int] = None):
+        """Include all entities from a domain in recorder with optional recorder days."""
+        await self.exclude_domain(domain, False, recorder_days)
+    
+    async def bulk_exclude_domains(self, domains: List[str], recorder_exclude: bool = True, recorder_days: Optional[int] = None):
+        """Bulk exclude/include multiple domains with optional recorder days."""
+        domains_copy = list(domains)  # Avoid iteration issues
+        
+        for domain in domains_copy:
+            await self.exclude_domain(domain, recorder_exclude, recorder_days)
+    
     async def update_recorder_config(self, backup_config: bool = True) -> Dict[str, Any]:
-        """Update Home Assistant configuration.yaml with recorder exclude settings."""
-        result = {"status": "success", "message": "", "excluded_entities": []}
+        """Update recorder.yaml with complete domain and entity configuration."""
+        result = {"status": "success", "message": "", "excluded_entities": [], "excluded_domains": [], "domain_configs": {}}
         
         try:
-            config_path = self.hass.config.path(RECORDER_CONFIG_PATH)
-            backup_path = self.hass.config.path(RECORDER_CONFIG_BACKUP_PATH)
+            recorder_yaml_path = self.hass.config.path(RECORDER_YAML_PATH)
+            config_yaml_path = self.hass.config.path(RECORDER_CONFIG_PATH)
+            recorder_backup_path = self.hass.config.path(RECORDER_YAML_BACKUP_PATH)
             
-            # Coletar entidades marcadas para exclusão
+            # Make backup if requested
+            if backup_config and os.path.exists(recorder_yaml_path):
+                await self.hass.async_add_executor_job(shutil.copy2, recorder_yaml_path, recorder_backup_path)
+                _LOGGER.info("Backup created: %s", recorder_backup_path)
+            
+            # Get all entities to understand current state
+            entities = await self.get_all_entities()
+            
+            # Create recorder configuration - FIXED: No 'recorder:' wrapper since it's included via !include
+            recorder_config = {
+                "db_url": "sqlite:///home-assistant_v2.db",  # User should customize
+                "purge_keep_days": 10,  # Default - user should customize
+                "commit_interval": 1,
+                "auto_purge": True,
+                "auto_repack": True
+            }
+            
+            # Process domain exclusions
+            excluded_domains = []
+            domain_include_configs = {}
+            
+            for domain, domain_config in self._domain_config.items():
+                if domain_config.get("recorder_exclude", False):
+                    excluded_domains.append(domain)
+                else:
+                    # Domain is included, check if it has custom recorder days
+                    recorder_days = domain_config.get("recorder_days")
+                    if recorder_days is not None and recorder_days != DEFAULT_RECORDER_DAYS:
+                        domain_include_configs[domain] = {"purge_keep_days": recorder_days}
+            
+            # Process individual entity exclusions (only for entities not in excluded domains)
             excluded_entities = []
+            individual_entity_configs = {}
+            
             for entity_id, config in self._config.items():
+                domain = entity_id.split('.')[0]
+                
+                # Skip if domain is fully excluded
+                if domain in excluded_domains:
+                    continue
+                
                 if config.get("recorder_exclude", False):
                     excluded_entities.append(entity_id)
+                else:
+                    # Entity is included, check if it has custom recorder days
+                    recorder_days = config.get("recorder_days")
+                    if recorder_days is not None:
+                        # Only include if different from domain default or system default
+                        domain_default = self._domain_config.get(domain, {}).get("recorder_days", DEFAULT_RECORDER_DAYS)
+                        if recorder_days != domain_default:
+                            individual_entity_configs[entity_id] = {"purge_keep_days": recorder_days}
             
-            result["excluded_entities"] = excluded_entities
+            # Build exclude section
+            exclude_section = {}
+            if excluded_domains:
+                exclude_section["domains"] = sorted(excluded_domains)
+            if excluded_entities:
+                exclude_section["entities"] = sorted(excluded_entities)
             
-            if not excluded_entities:
-                result["message"] = "Nenhuma entidade marcada para exclusão do recorder."
-                return result
+            if exclude_section:
+                recorder_config["exclude"] = exclude_section
             
-            # Fazer backup se solicitado
-            if backup_config and os.path.exists(config_path):
-                await self.hass.async_add_executor_job(shutil.copy2, config_path, backup_path)
-                _LOGGER.info("Backup created: %s", backup_path)
+            # Build include section with custom purge_keep_days
+            include_section = {}
+            if domain_include_configs:
+                include_section["domains"] = domain_include_configs
+            if individual_entity_configs:
+                include_section["entities"] = individual_entity_configs
             
-            # Ler configuração atual
-            config_data = {}
-            if os.path.exists(config_path):
-                config_data = await self.hass.async_add_executor_job(self._load_yaml_file, config_path)
+            if include_section:
+                recorder_config["include"] = include_section
             
-            # Atualizar configuração do recorder
-            if "recorder" not in config_data:
-                config_data["recorder"] = {}
+            # Add comments to the YAML
+            yaml_content = self._create_recorder_yaml_with_comments(recorder_config)
             
-            if "exclude" not in config_data["recorder"]:
-                config_data["recorder"]["exclude"] = {}
+            # Save recorder.yaml
+            await self.hass.async_add_executor_job(self._save_yaml_content, recorder_yaml_path, yaml_content)
             
-            if "entities" not in config_data["recorder"]["exclude"]:
-                config_data["recorder"]["exclude"]["entities"] = []
+            # Update configuration.yaml to include recorder.yaml if not already included
+            await self._ensure_recorder_yaml_included(config_yaml_path, backup_config)
             
-            # Adicionar entidades excluídas (evitar duplicatas)
-            current_excluded = set(config_data["recorder"]["exclude"]["entities"])
-            new_excluded = set(excluded_entities)
-            all_excluded = sorted(current_excluded.union(new_excluded))
-            config_data["recorder"]["exclude"]["entities"] = all_excluded
+            # Prepare result
+            result.update({
+                "excluded_entities": excluded_entities,
+                "excluded_domains": excluded_domains,
+                "domain_configs": {
+                    "excluded_domains": len(excluded_domains),
+                    "domains_with_custom_days": len(domain_include_configs),
+                    "entities_with_custom_days": len(individual_entity_configs)
+                }
+            })
             
-            # Salvar configuração atualizada
-            await self.hass.async_add_executor_job(self._save_yaml_file, config_path, config_data)
+            total_excluded = len(excluded_entities)
+            message_parts = []
+            if excluded_domains:
+                message_parts.append(f"{len(excluded_domains)} domínios excluídos")
+            if excluded_entities:
+                message_parts.append(f"{len(excluded_entities)} entidades individuais excluídas")
+            if domain_include_configs:
+                message_parts.append(f"{len(domain_include_configs)} domínios com dias customizados")
+            if individual_entity_configs:
+                message_parts.append(f"{len(individual_entity_configs)} entidades com dias customizados")
             
-            result["message"] = f"Configuração atualizada com {len(excluded_entities)} entidades excluídas. Reinicie o HA para aplicar."
-            _LOGGER.info("Updated recorder configuration with %d excluded entities", len(excluded_entities))
+            if message_parts:
+                result["message"] = f"recorder.yaml atualizado com {', '.join(message_parts)}. Reinicie o HA para aplicar."
+            else:
+                result["message"] = "recorder.yaml criado com configuração padrão. Personalize conforme necessário."
+            
+            _LOGGER.info("Updated recorder.yaml: %s", result["message"])
             
         except Exception as e:
             _LOGGER.error("Error updating recorder configuration: %s", e, exc_info=True)
@@ -414,12 +700,108 @@ class EntityManager:
         
         return result
     
+    def _create_recorder_yaml_with_comments(self, config: Dict[str, Any]) -> str:
+        """Create recorder.yaml content with helpful comments."""
+        content = "# Configuração do Recorder gerada pelo Entity Manager\n"
+        content += "# Data: " + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "\n"
+        content += "# \n"
+        content += "# IMPORTANTE: Após fazer alterações, reinicie o Home Assistant\n"
+        content += "# \n"
+        content += "# Documentação: https://www.home-assistant.io/integrations/recorder/\n"
+        content += "\n"
+        
+        # Add recorder configuration directly (no 'recorder:' wrapper since it's included)
+        yaml_str = yaml.safe_dump(config, default_flow_style=False, allow_unicode=True, indent=2)
+        
+        # Add inline comments
+        lines = yaml_str.split('\n')
+        enhanced_lines = []
+        
+        for line in lines:
+            if 'db_url:' in line and 'sqlite:///home-assistant_v2.db' in line:
+                enhanced_lines.append(line + '  # Personalize o caminho do banco conforme necessário')
+            elif 'purge_keep_days: 10' in line and not any(x in line for x in ['domains:', 'entities:']):
+                enhanced_lines.append(line + '  # Dias padrão de retenção - personalize conforme necessário')
+            elif line.strip() == 'exclude:':
+                enhanced_lines.append(line + '  # Entidades e domínios excluídos do recorder')
+            elif line.strip() == 'include:':
+                enhanced_lines.append(line + '  # Configurações customizadas de retenção')
+            elif 'domains:' in line and any(x in yaml_str[:yaml_str.find(line)] for x in ['exclude:']):
+                enhanced_lines.append(line + '  # Domínios completamente excluídos')
+            elif 'entities:' in line and any(x in yaml_str[:yaml_str.find(line)] for x in ['exclude:']):
+                enhanced_lines.append(line + '  # Entidades individuais excluídas')
+            else:
+                enhanced_lines.append(line)
+        
+        content += '\n'.join(enhanced_lines)
+        content += "\n\n# Configuração gerada automaticamente pelo Entity Manager\n"
+        content += "# Para modificar, use a interface do Entity Manager ou edite este arquivo manualmente\n"
+        
+        return content
+    
+    def _save_yaml_content(self, file_path: str, content: str) -> None:
+        """Save YAML content to file synchronously."""
+        try:
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+        except Exception as e:
+            _LOGGER.error("Error saving YAML content to %s: %s", file_path, e)
+            raise
+    
+    async def _ensure_recorder_yaml_included(self, config_path: str, backup_config: bool = True):
+        """Ensure that recorder.yaml is included in configuration.yaml."""
+        try:
+            # Make backup of configuration.yaml if requested
+            if backup_config and os.path.exists(config_path):
+                config_backup_path = self.hass.config.path(RECORDER_CONFIG_BACKUP_PATH)
+                await self.hass.async_add_executor_job(shutil.copy2, config_path, config_backup_path)
+            
+            # Read file as text to check if include is already present
+            file_content = ""
+            if os.path.exists(config_path):
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    file_content = f.read()
+            
+            # Check if recorder is already configured
+            has_recorder_include = "recorder: !include recorder.yaml" in file_content
+            has_recorder_section = "recorder:" in file_content
+            
+            # If recorder include is not present, add it
+            if not has_recorder_include and not has_recorder_section:
+                # Add the include line
+                if file_content and not file_content.endswith('\n'):
+                    file_content += '\n'
+                
+                file_content += '\n# Entity Manager - Recorder Configuration\n'
+                file_content += '# IMPORTANTE: O arquivo recorder.yaml contém todas as configurações do recorder\n'
+                file_content += '# Gerado automaticamente pelo Entity Manager\n'
+                file_content += 'recorder: !include recorder.yaml\n'
+                
+                # Write updated content
+                with open(config_path, 'w', encoding='utf-8') as f:
+                    f.write(file_content)
+                
+                _LOGGER.info("Added 'recorder: !include recorder.yaml' to configuration.yaml")
+            
+            elif has_recorder_section and not has_recorder_include:
+                _LOGGER.warning(
+                    "recorder: section already exists in configuration.yaml. "
+                    "Para usar o Entity Manager, substitua a seção recorder: existente por: "
+                    "'recorder: !include recorder.yaml' e mova suas configurações para recorder.yaml"
+                )
+            
+            else:
+                _LOGGER.info("recorder: !include recorder.yaml already present in configuration.yaml")
+            
+        except Exception as e:
+            _LOGGER.error("Error ensuring recorder.yaml include: %s", e)
+    
     async def purge_all_entities(self, force_purge: bool = False) -> Dict[str, Any]:
         """Execute recorder.purge_entities service."""
         result = {"status": "success", "message": "", "purged_entities": []}
         
         try:
-            # Coletar entidades marcadas para exclusão
+            # Collect excluded entities
             excluded_entities = []
             for entity_id, config in self._config.items():
                 if config.get("recorder_exclude", False):
@@ -429,7 +811,7 @@ class EntityManager:
                 result["message"] = "Nenhuma entidade marcada para limpeza do recorder."
                 return result
             
-            # Executar purge_entities
+            # Execute purge_entities
             service_data = {}
             if excluded_entities:
                 service_data["entity_ids"] = excluded_entities
@@ -471,12 +853,12 @@ class EntityManager:
     
     async def purge_recorder(self, entity_ids: List[str] = None, force_purge: bool = False):
         """Purge recorder data for entities."""
-        # Implementação simplificada - pode ser expandida
+        # Simplified implementation
         pass
 
     async def intelligent_purge(self, force_purge: bool = False) -> Dict[str, Any]:
         """Execute intelligent purge based on entity configurations."""
-        # Implementação simplificada - pode ser expandida
+        # Simplified implementation
         return {}
 
     async def generate_recorder_report(self, limit: int = 100, days_back: int = 30) -> Dict[str, Any]:

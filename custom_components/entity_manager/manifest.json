@@ -1,14 +1,13 @@
 {
   "domain": "entity_manager",
   "name": "Entity Manager",
-  "description": "Gerenciador avançado de entidades com controle de recorder",
-  "version": "1.0.0",
+  "version": "44.0.0",
+  "documentation": "https://github.com/custom-components/entity-manager",
+  "issue_tracker": "https://github.com/custom-components/entity-manager/issues",
+  "dependencies": [],
+  "codeowners": ["@entity-manager"],
   "requirements": [],
-  "dependencies": ["recorder"],
-  "codeowners": [],
   "config_flow": true,
-  "documentation": "",
-  "issue_tracker": "",
-  "quality_scale": "internal",
-  "iot_class": "Local Polling"
+  "iot_class": "local_push",
+  "integration_type": "helper"
 }

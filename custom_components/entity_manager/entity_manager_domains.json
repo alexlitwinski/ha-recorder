@@ -1,0 +1,74 @@
+{
+  "tts": {
+    "recorder_exclude": true
+  },
+  "update": {
+    "recorder_exclude": true
+  },
+  "event": {
+    "recorder_exclude": true
+  },
+  "media_player": {
+    "recorder_exclude": true
+  },
+  "vacuum": {
+    "recorder_exclude": true
+  },
+  "assist_satellite": {
+    "recorder_exclude": true
+  },
+  "automation": {
+    "recorder_exclude": true
+  },
+  "camera": {
+    "recorder_exclude": true
+  },
+  "conversation": {
+    "recorder_exclude": true
+  },
+  "counter": {
+    "recorder_exclude": true
+  },
+  "cover": {
+    "recorder_exclude": true
+  },
+  "device_tracker": {
+    "recorder_exclude": true
+  },
+  "fan": {
+    "recorder_exclude": true
+  },
+  "humidifier": {
+    "recorder_exclude": true
+  },
+  "image": {
+    "recorder_exclude": true
+  },
+  "input_button": {
+    "recorder_exclude": true
+  },
+  "input_datetime": {
+    "recorder_exclude": true
+  },
+  "input_number": {
+    "recorder_exclude": true
+  },
+  "scene": {
+    "recorder_exclude": true
+  },
+  "stt": {
+    "recorder_exclude": true
+  },
+  "input_text": {
+    "recorder_exclude": true
+  },
+  "input_boolean": {
+    "recorder_exclude": true
+  },
+  "input_select": {
+    "recorder_exclude": true
+  },
+  "remote": {
+    "recorder_exclude": true
+  }
+}
